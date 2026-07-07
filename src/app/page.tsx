@@ -4,7 +4,11 @@ import { auth } from "@/auth";
 import type { Prisma } from "@/generated/prisma/client";
 
 type SopWithRelations = Prisma.SopGetPayload<{
-  include: { analysisType: true; foodCategory: true; versions: true };
+  include: {
+    analysisType: true;
+    foodCategory: true;
+    versions: { include: { uploadedBy: { select: { username: true } } } };
+  };
 }>;
 
 type TreeGroupBy = "analysisType" | "foodCategory";
@@ -51,7 +55,7 @@ function SopTree({
           <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-black dark:text-zinc-50">
             {outerName}
           </summary>
-          <div className="flex flex-col gap-1 px-3 pb-3 pl-5">
+          <div className="flex flex-col gap-1 px-3 pb-3 pl-10">
             {sortedEntries(innerMap).map(([innerName, sopsForGroup]) => (
               <details
                 key={innerName}
@@ -61,7 +65,7 @@ function SopTree({
                 <summary className="cursor-pointer select-none px-2 py-1 text-sm text-zinc-700 dark:text-zinc-300">
                   {innerName}
                 </summary>
-                <ul className="flex flex-col gap-1 py-1 pl-5">
+                <ul className="flex flex-col gap-1 py-1 pl-10">
                   {sopsForGroup.map((sop) => (
                     <li key={sop.id}>
                       <Link
@@ -101,7 +105,7 @@ function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
           <th className="py-2 pr-4">Analysis type</th>
           <th className="py-2 pr-4">Food category</th>
           <th className="py-2 pr-4">Version</th>
-          <th className="py-2">
+          <th className="py-2 pr-4">
             <Link
               href={`/?view=list&sort=${nextSort}`}
               className="inline-flex items-center gap-1 hover:underline"
@@ -109,6 +113,7 @@ function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
               Last updated {sort === "date-desc" ? "▼" : "▲"}
             </Link>
           </th>
+          <th className="py-2">Updated by</th>
         </tr>
       </thead>
       <tbody>
@@ -136,8 +141,11 @@ function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
               <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
                 {current ? `v${current.versionNumber}` : "-"}
               </td>
-              <td className="py-2 text-zinc-700 dark:text-zinc-300">
+              <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
                 {current ? current.uploadedAt.toLocaleDateString() : "-"}
+              </td>
+              <td className="py-2 text-zinc-700 dark:text-zinc-300">
+                {current?.uploadedBy.username ?? "-"}
               </td>
             </tr>
           );
@@ -168,7 +176,11 @@ export default async function HomePage({
       include: {
         analysisType: true,
         foodCategory: true,
-        versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+        versions: {
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          include: { uploadedBy: { select: { username: true } } },
+        },
       },
       orderBy: [
         { analysisType: { name: "asc" } },
