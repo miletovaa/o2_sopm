@@ -22,10 +22,25 @@ async function main() {
   const employee = await upsertUser("admin", employeePassword, "EMPLOYEE");
   const student = await upsertUser("student", studentPassword, "STUDENT");
 
+  const analysisTypes = ["Isotope Analysis", "Fatty Acid Analysis", "Multi-Element Analysis"];
+  const foodCategories = ["Meat", "Fish", "Apples", "Honey"];
+
+  await Promise.all(
+    analysisTypes.map((name) =>
+      prisma.analysisType.upsert({ where: { name }, update: {}, create: { name } }),
+    ),
+  );
+  await Promise.all(
+    foodCategories.map((name) =>
+      prisma.foodCategory.upsert({ where: { name }, update: {}, create: { name } }),
+    ),
+  );
+
   console.log("Seeded users:");
   console.log(`  employee: username="${employee.username}" password="${employeePassword}"`);
   console.log(`  student:  username="${student.username}" password="${studentPassword}"`);
   console.log("Change these passwords after first login.");
+  console.log(`Seeded ${analysisTypes.length} analysis types and ${foodCategories.length} food categories.`);
 }
 
 main()

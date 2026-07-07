@@ -26,13 +26,33 @@ model User {
   sopVersions  SopVersion[] @relation("UploadedVersions")
 }
 
+model AnalysisType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  sops      Sop[]
+}
+
+model FoodCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  sops      Sop[]
+}
+
 model Sop {
   id                 String               @id @default(cuid())
   title              String
-  category           String?
+  analysisType       AnalysisType         @relation(fields: [analysisTypeId], references: [id])
+  analysisTypeId     String
+  foodCategory       FoodCategory         @relation(fields: [foodCategoryId], references: [id])
+  foodCategoryId     String
   createdAt          DateTime             @default(now())
   versions           SopVersion[]
   referenceMaterials ReferenceMaterial[]  @relation("SopReferenceMaterials")
+
+  @@index([analysisTypeId])
+  @@index([foodCategoryId])
 }
 
 model SopVersion {

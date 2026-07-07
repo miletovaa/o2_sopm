@@ -4,7 +4,7 @@ import { authConfig } from "@/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-// Routes only Employees may reach: version history/diff, edit/upload, and
+// Routes only Employees may reach: version history, edit/upload, and
 // management of reference & safety materials. Students are read-only on the
 // current SOP version and never see any of this.
 const EMPLOYEE_ONLY_PATTERNS = [
@@ -12,7 +12,6 @@ const EMPLOYEE_ONLY_PATTERNS = [
   /^\/sops\/new(\/|$)/,
   /^\/sops\/[^/]+\/edit(\/|$)/,
   /^\/sops\/[^/]+\/history(\/|$)/,
-  /^\/sops\/[^/]+\/diff(\/|$)/,
   /^\/reference-materials(\/|$)/,
   /^\/safety-materials(\/|$)/,
 ];
