@@ -13,7 +13,11 @@ export default async function SopDetailPage({
     include: {
       analysisType: true,
       foodCategory: true,
-      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+      versions: {
+        orderBy: { versionNumber: "desc" },
+        take: 1,
+        include: { uploadedBy: { select: { username: true } } },
+      },
     },
   });
 
@@ -31,10 +35,19 @@ export default async function SopDetailPage({
       <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
         {sop.title}
       </h1>
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        Version {currentVersion.versionNumber} — uploaded{" "}
-        {currentVersion.uploadedAt.toLocaleString()}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Version {currentVersion.versionNumber} — uploaded{" "}
+          {currentVersion.uploadedAt.toLocaleString()} by{" "}
+          {currentVersion.uploadedBy.username}
+        </p>
+        <a
+          href={`/api/sops/${sop.id}/versions/${currentVersion.versionNumber}/file`}
+          className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+        >
+          Download original (.docx)
+        </a>
+      </div>
       {/*
         Safe to render directly: this HTML comes from mammoth's docx->HTML
         conversion, which emits a fixed set of semantic tags derived from the
