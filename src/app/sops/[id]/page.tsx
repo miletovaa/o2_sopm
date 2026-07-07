@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export default async function SopDetailPage({
   params,
@@ -8,24 +9,28 @@ export default async function SopDetailPage({
 }) {
   const { id } = await params;
 
-  const sop = await prisma.sop.findUnique({
-    where: { id },
-    include: {
-      analysisType: true,
-      foodCategory: true,
-      versions: {
-        orderBy: { versionNumber: "desc" },
-        take: 1,
-        include: { uploadedBy: { select: { username: true } } },
+  const [session, sop] = await Promise.all([
+    auth(),
+    prisma.sop.findUnique({
+      where: { id },
+      include: {
+        analysisType: true,
+        foodCategory: true,
+        versions: {
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          include: { uploadedBy: { select: { username: true } } },
+        },
       },
-    },
-  });
+    }),
+  ]);
 
   if (!sop || sop.versions.length === 0) {
     notFound();
   }
 
   const currentVersion = sop.versions[0];
+  const isEmployee = session?.user?.role === "EMPLOYEE";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-12">
@@ -41,12 +46,22 @@ export default async function SopDetailPage({
           {currentVersion.uploadedAt.toLocaleString()} by{" "}
           {currentVersion.uploadedBy.username}
         </p>
-        <a
-          href={`/api/sops/${sop.id}/versions/${currentVersion.versionNumber}/file`}
-          className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
-        >
-          Download original (.docx)
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/sops/${sop.id}/versions/${currentVersion.versionNumber}/file`}
+            className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+          >
+            Download original (.docx)
+          </a>
+          {isEmployee && (
+            <a
+              href={`/sops/${sop.id}/edit`}
+              className="rounded bg-black px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            >
+              Upload new version
+            </a>
+          )}
+        </div>
       </div>
       {/*
         Safe to render directly: this HTML comes from mammoth's docx->HTML
