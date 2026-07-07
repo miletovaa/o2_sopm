@@ -7,44 +7,62 @@ type SopWithRelations = Prisma.SopGetPayload<{
   include: { analysisType: true; foodCategory: true; versions: true };
 }>;
 
-function groupByAnalysisAndFood(sops: SopWithRelations[]) {
+type TreeGroupBy = "analysisType" | "foodCategory";
+type ListSort = "date-asc" | "date-desc";
+
+function sortedEntries<V>(map: Map<string, V>) {
+  return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+function groupSops(sops: SopWithRelations[], groupBy: TreeGroupBy) {
+  const outerKey = (sop: SopWithRelations) =>
+    groupBy === "foodCategory" ? sop.foodCategory.name : sop.analysisType.name;
+  const innerKey = (sop: SopWithRelations) =>
+    groupBy === "foodCategory" ? sop.analysisType.name : sop.foodCategory.name;
+
   const grouped = new Map<string, Map<string, SopWithRelations[]>>();
   for (const sop of sops) {
-    const analysisName = sop.analysisType.name;
-    const foodName = sop.foodCategory.name;
-    if (!grouped.has(analysisName)) grouped.set(analysisName, new Map());
-    const foodMap = grouped.get(analysisName)!;
-    if (!foodMap.has(foodName)) foodMap.set(foodName, []);
-    foodMap.get(foodName)!.push(sop);
+    const outer = outerKey(sop);
+    const inner = innerKey(sop);
+    if (!grouped.has(outer)) grouped.set(outer, new Map());
+    const innerMap = grouped.get(outer)!;
+    if (!innerMap.has(inner)) innerMap.set(inner, []);
+    innerMap.get(inner)!.push(sop);
   }
   return grouped;
 }
 
-function SopTree({ sops }: { sops: SopWithRelations[] }) {
-  const grouped = groupByAnalysisAndFood(sops);
+function SopTree({
+  sops,
+  groupBy,
+}: {
+  sops: SopWithRelations[];
+  groupBy: TreeGroupBy;
+}) {
+  const grouped = groupSops(sops, groupBy);
   return (
     <div className="flex flex-col gap-2">
-      {[...grouped.entries()].map(([analysisName, foodMap]) => (
+      {sortedEntries(grouped).map(([outerName, innerMap]) => (
         <details
-          key={analysisName}
+          key={outerName}
           open
           className="rounded border border-black/10 dark:border-white/10"
         >
           <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-black dark:text-zinc-50">
-            {analysisName}
+            {outerName}
           </summary>
           <div className="flex flex-col gap-1 px-3 pb-3 pl-5">
-            {[...foodMap.entries()].map(([foodName, sopsForFood]) => (
+            {sortedEntries(innerMap).map(([innerName, sopsForGroup]) => (
               <details
-                key={foodName}
+                key={innerName}
                 open
                 className="rounded border border-black/5 dark:border-white/5"
               >
                 <summary className="cursor-pointer select-none px-2 py-1 text-sm text-zinc-700 dark:text-zinc-300">
-                  {foodName}
+                  {innerName}
                 </summary>
                 <ul className="flex flex-col gap-1 py-1 pl-5">
-                  {sopsForFood.map((sop) => (
+                  {sopsForGroup.map((sop) => (
                     <li key={sop.id}>
                       <Link
                         href={`/sops/${sop.id}`}
@@ -67,7 +85,14 @@ function SopTree({ sops }: { sops: SopWithRelations[] }) {
   );
 }
 
-function SopList({ sops }: { sops: SopWithRelations[] }) {
+function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
+  const nextSort: ListSort = sort === "date-desc" ? "date-asc" : "date-desc";
+  const sorted = [...sops].sort((a, b) => {
+    const aTime = a.versions[0]?.uploadedAt.getTime() ?? 0;
+    const bTime = b.versions[0]?.uploadedAt.getTime() ?? 0;
+    return sort === "date-asc" ? aTime - bTime : bTime - aTime;
+  });
+
   return (
     <table className="w-full text-left text-sm">
       <thead>
@@ -76,11 +101,18 @@ function SopList({ sops }: { sops: SopWithRelations[] }) {
           <th className="py-2 pr-4">Analysis type</th>
           <th className="py-2 pr-4">Food category</th>
           <th className="py-2 pr-4">Version</th>
-          <th className="py-2">Last updated</th>
+          <th className="py-2">
+            <Link
+              href={`/?view=list&sort=${nextSort}`}
+              className="inline-flex items-center gap-1 hover:underline"
+            >
+              Last updated {sort === "date-desc" ? "▼" : "▲"}
+            </Link>
+          </th>
         </tr>
       </thead>
       <tbody>
-        {sops.map((sop) => {
+        {sorted.map((sop) => {
           const current = sop.versions[0];
           return (
             <tr
@@ -118,10 +150,17 @@ function SopList({ sops }: { sops: SopWithRelations[] }) {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; groupBy?: string; sort?: string }>;
 }) {
-  const { view: viewParam } = await searchParams;
+  const {
+    view: viewParam,
+    groupBy: groupByParam,
+    sort: sortParam,
+  } = await searchParams;
   const view = viewParam === "list" ? "list" : "tree";
+  const groupBy: TreeGroupBy =
+    groupByParam === "foodCategory" ? "foodCategory" : "analysisType";
+  const sort: ListSort = sortParam === "date-asc" ? "date-asc" : "date-desc";
 
   const [session, sops] = await Promise.all([
     auth(),
@@ -157,27 +196,54 @@ export default async function HomePage({
         )}
       </div>
 
-      <div className="flex gap-2 text-sm">
-        <Link
-          href="/?view=tree"
-          className={`rounded px-3 py-1 ${
-            view === "tree"
-              ? "bg-black text-white dark:bg-white dark:text-black"
-              : "border border-black/10 text-zinc-700 dark:border-white/10 dark:text-zinc-300"
-          }`}
-        >
-          Tree view
-        </Link>
-        <Link
-          href="/?view=list"
-          className={`rounded px-3 py-1 ${
-            view === "list"
-              ? "bg-black text-white dark:bg-white dark:text-black"
-              : "border border-black/10 text-zinc-700 dark:border-white/10 dark:text-zinc-300"
-          }`}
-        >
-          List view
-        </Link>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-2 text-sm">
+          <Link
+            href="/?view=tree"
+            className={`rounded px-3 py-1 ${
+              view === "tree"
+                ? "bg-black text-white dark:bg-white dark:text-black"
+                : "border border-black/10 text-zinc-700 dark:border-white/10 dark:text-zinc-300"
+            }`}
+          >
+            Tree view
+          </Link>
+          <Link
+            href="/?view=list"
+            className={`rounded px-3 py-1 ${
+              view === "list"
+                ? "bg-black text-white dark:bg-white dark:text-black"
+                : "border border-black/10 text-zinc-700 dark:border-white/10 dark:text-zinc-300"
+            }`}
+          >
+            List view
+          </Link>
+        </div>
+
+        {view === "tree" && (
+          <div className="flex gap-2 text-xs">
+            <Link
+              href="/?view=tree&groupBy=analysisType"
+              className={`rounded px-2 py-1 ${
+                groupBy === "analysisType"
+                  ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-black"
+                  : "border border-black/10 text-zinc-600 dark:border-white/10 dark:text-zinc-400"
+              }`}
+            >
+              By analysis type
+            </Link>
+            <Link
+              href="/?view=tree&groupBy=foodCategory"
+              className={`rounded px-2 py-1 ${
+                groupBy === "foodCategory"
+                  ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-black"
+                  : "border border-black/10 text-zinc-600 dark:border-white/10 dark:text-zinc-400"
+              }`}
+            >
+              By food category
+            </Link>
+          </div>
+        )}
       </div>
 
       {sops.length === 0 ? (
@@ -185,9 +251,9 @@ export default async function HomePage({
           No SOPs have been uploaded yet.
         </p>
       ) : view === "tree" ? (
-        <SopTree sops={sops} />
+        <SopTree sops={sops} groupBy={groupBy} />
       ) : (
-        <SopList sops={sops} />
+        <SopList sops={sops} sort={sort} />
       )}
     </div>
   );
