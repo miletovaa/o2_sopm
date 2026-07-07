@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
-import { extractDocx } from "@/lib/docx";
+import { extractDocxText } from "@/lib/docx";
 import { saveSopVersionFile } from "@/lib/storage";
 
 const DOCX_MIME_TYPE =
@@ -46,7 +46,7 @@ export async function POST(
 
   const nextVersionNumber = (sop.versions[0]?.versionNumber ?? 0) + 1;
   const buffer = Buffer.from(await file.arrayBuffer());
-  const { html, text } = await extractDocx(buffer);
+  const text = await extractDocxText(buffer);
   const relativeFilePath = await saveSopVersionFile(
     sopId,
     nextVersionNumber,
@@ -59,7 +59,6 @@ export async function POST(
         sopId,
         versionNumber: nextVersionNumber,
         filePath: relativeFilePath,
-        extractedHtml: html,
         extractedText: text,
         changeNote:
           typeof changeNote === "string" && changeNote.trim()

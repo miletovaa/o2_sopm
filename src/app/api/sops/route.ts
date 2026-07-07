@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractDocx } from "@/lib/docx";
+import { extractDocxText } from "@/lib/docx";
 import { saveSopVersionFile } from "@/lib/storage";
 import { findOrCreateAnalysisType, findOrCreateFoodCategory } from "@/lib/taxonomy";
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   ]);
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const { html, text } = await extractDocx(buffer);
+  const text = await extractDocxText(buffer);
 
   // Generate the id up front so the file can be written to its final,
   // deterministic path before either DB row exists. The Sop + SopVersion
@@ -72,7 +72,6 @@ export async function POST(request: Request) {
         sopId,
         versionNumber: 1,
         filePath: relativeFilePath,
-        extractedHtml: html,
         extractedText: text,
         uploadedById: session.user.id,
       },

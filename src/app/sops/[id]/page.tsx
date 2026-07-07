@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { DocxViewer } from "@/components/DocxViewer";
 
 export default async function SopDetailPage({
   params,
@@ -18,7 +20,6 @@ export default async function SopDetailPage({
         foodCategory: true,
         versions: {
           orderBy: { versionNumber: "desc" },
-          take: 1,
           include: { uploadedBy: { select: { username: true } } },
         },
       },
@@ -30,10 +31,17 @@ export default async function SopDetailPage({
   }
 
   const currentVersion = sop.versions[0];
+  const olderVersions = sop.versions.slice(1);
   const isEmployee = session?.user?.role === "EMPLOYEE";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-12">
+      <Link
+        href="/"
+        className="text-sm text-zinc-600 hover:underline dark:text-zinc-400"
+      >
+        ← Back to SOPs
+      </Link>
       <p className="text-sm text-zinc-500 dark:text-zinc-400">
         {sop.analysisType.name} / {sop.foodCategory.name}
       </p>
@@ -63,18 +71,68 @@ export default async function SopDetailPage({
           )}
         </div>
       </div>
-      {/*
-        Safe to render directly: this HTML comes from mammoth's docx->HTML
-        conversion, which emits a fixed set of semantic tags derived from the
-        document's structure (paragraphs, formatting, tables, links, images
-        as data URIs) — a .docx has no mechanism to inject <script> content,
-        so there is no XSS vector here the way there would be for
-        user-submitted raw HTML.
-      */}
-      <div
-        className="prose prose-zinc max-w-none dark:prose-invert"
-        dangerouslySetInnerHTML={{ __html: currentVersion.extractedHtml }}
+
+      <DocxViewer
+        src={`/api/sops/${sop.id}/versions/${currentVersion.versionNumber}/file`}
       />
+
+      {isEmployee && (
+        <div className="mt-4 flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-black dark:text-zinc-50">
+            Version history
+          </h2>
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-black/10 text-xs uppercase text-zinc-500 dark:border-white/10 dark:text-zinc-400">
+                <th className="py-2 pr-4">Version</th>
+                <th className="py-2 pr-4">Date</th>
+                <th className="py-2 pr-4">Author</th>
+                <th className="py-2 pr-4">Change note</th>
+                <th className="py-2">Download</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sop.versions.map((version) => (
+                <tr
+                  key={version.id}
+                  className="border-b border-black/5 dark:border-white/5"
+                >
+                  <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
+                    v{version.versionNumber}
+                    {version.id === currentVersion.id && (
+                      <span className="ml-2 rounded bg-zinc-200 px-1.5 py-0.5 text-xs text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200">
+                        current
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
+                    {version.uploadedAt.toLocaleString()}
+                  </td>
+                  <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
+                    {version.uploadedBy.username}
+                  </td>
+                  <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
+                    {version.changeNote ?? "—"}
+                  </td>
+                  <td className="py-2">
+                    <a
+                      href={`/api/sops/${sop.id}/versions/${version.versionNumber}/file`}
+                      className="text-black hover:underline dark:text-zinc-50"
+                    >
+                      Download
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {olderVersions.length === 0 && (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              No prior versions yet.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -61,7 +61,6 @@ model SopVersion {
   sopId         String
   versionNumber Int
   filePath      String
-  extractedHtml String
   extractedText String
   changeNote    String?
   uploadedBy    User     @relation("UploadedVersions", fields: [uploadedById], references: [id])
