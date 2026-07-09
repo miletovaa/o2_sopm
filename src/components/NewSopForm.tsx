@@ -72,7 +72,7 @@ export function NewSopForm({
         </span>
       </label>
       <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-        Food category
+        Category
         <input
           name="foodCategory"
           type="text"
@@ -81,7 +81,7 @@ export function NewSopForm({
           placeholder="e.g. Meat"
           className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
         />
-        <datalist id="food-category-options">
+        <datalist id="food-category-options" className="border-none">
           {foodCategories.map((name) => (
             <option key={name} value={name} />
           ))}

@@ -52,7 +52,7 @@ function SopTree({
           open
           className="rounded border border-black/10 dark:border-white/10"
         >
-          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-black dark:text-zinc-50">
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-bold text-black dark:text-zinc-50">
             {outerName}
           </summary>
           <div className="flex flex-col gap-1 px-3 pb-3 pl-10">

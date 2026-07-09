@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DocxViewer } from "@/components/DocxViewer";
+import { PdfViewer } from "@/components/PdfViewer";
 
 export type VersionSummary = {
   versionNumber: number;
@@ -27,6 +27,7 @@ export function SopVersionExplorer({
     versions.find((v) => v.versionNumber === selectedVersionNumber) ??
     versions[0];
   const fileUrl = `/api/sops/${sopId}/versions/${selected.versionNumber}/file`;
+  const pdfUrl = `/api/sops/${sopId}/versions/${selected.versionNumber}/pdf`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -46,7 +47,7 @@ export function SopVersionExplorer({
         </a>
       </div>
 
-      <DocxViewer src={fileUrl} />
+      <PdfViewer src={pdfUrl} />
 
       {showHistory && (
         <div className="mt-4 flex flex-col gap-2">

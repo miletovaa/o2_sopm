@@ -31,7 +31,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SOP Management System",
+  title: "SOP Manager",
   description: "SOP storage, versioning, and access control",
 };
 
@@ -43,9 +43,9 @@ async function SiteHeader() {
     <header className="flex items-center justify-between border-b border-black/10 px-6 py-3 dark:border-white/10">
       <Link
         href="/"
-        className="text-sm font-semibold text-black dark:text-zinc-50"
+        className="text-xl font-semibold dark:text-zinc-50"
       >
-        SOP Management System
+        SOP<span className="text-gray-500">Manager</span>
       </Link>
       <div className="flex items-center gap-1 text-sm text-zinc-700 dark:text-zinc-300">
         <UploadSopButton isEmployee={user?.role === "EMPLOYEE"} />

@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractDocxText } from "@/lib/docx";
-import { saveSopVersionFile } from "@/lib/storage";
+import { convertDocxToPdf } from "@/lib/pdf";
+import { saveSopVersionFile, saveSopVersionPdf } from "@/lib/storage";
 import { findOrCreateAnalysisType, findOrCreateFoodCategory } from "@/lib/taxonomy";
 
 const DOCX_MIME_TYPE =
@@ -49,14 +50,20 @@ export async function POST(request: Request) {
   ]);
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const text = await extractDocxText(buffer);
+  const [text, pdfBuffer] = await Promise.all([
+    extractDocxText(buffer),
+    convertDocxToPdf(buffer),
+  ]);
 
-  // Generate the id up front so the file can be written to its final,
-  // deterministic path before either DB row exists. The Sop + SopVersion
+  // Generate the id up front so the files can be written to their final,
+  // deterministic paths before either DB row exists. The Sop + SopVersion
   // rows are then created together in one transaction, so a mid-write
   // failure never leaves an orphan Sop with no version pointing at it.
   const sopId = randomUUID();
-  const relativeFilePath = await saveSopVersionFile(sopId, 1, buffer);
+  const [relativeFilePath] = await Promise.all([
+    saveSopVersionFile(sopId, 1, buffer),
+    saveSopVersionPdf(sopId, 1, pdfBuffer),
+  ]);
 
   await prisma.$transaction([
     prisma.sop.create({

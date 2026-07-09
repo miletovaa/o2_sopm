@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { extractDocxText } from "@/lib/docx";
-import { saveSopVersionFile } from "@/lib/storage";
+import { convertDocxToPdf } from "@/lib/pdf";
+import { saveSopVersionFile, saveSopVersionPdf } from "@/lib/storage";
 
 const DOCX_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -46,12 +47,14 @@ export async function POST(
 
   const nextVersionNumber = (sop.versions[0]?.versionNumber ?? 0) + 1;
   const buffer = Buffer.from(await file.arrayBuffer());
-  const text = await extractDocxText(buffer);
-  const relativeFilePath = await saveSopVersionFile(
-    sopId,
-    nextVersionNumber,
-    buffer,
-  );
+  const [text, pdfBuffer] = await Promise.all([
+    extractDocxText(buffer),
+    convertDocxToPdf(buffer),
+  ]);
+  const [relativeFilePath] = await Promise.all([
+    saveSopVersionFile(sopId, nextVersionNumber, buffer),
+    saveSopVersionPdf(sopId, nextVersionNumber, pdfBuffer),
+  ]);
 
   try {
     await prisma.sopVersion.create({

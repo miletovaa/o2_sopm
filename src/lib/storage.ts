@@ -20,6 +20,25 @@ export async function saveSopVersionFile(
   return relativePath;
 }
 
+// Stored as a sibling of the .docx (same id/version, .pdf extension) rather
+// than a separate DB column — the path is always derivable from filePath via
+// pdfPathFor, so there's nothing extra to keep in sync.
+export async function saveSopVersionPdf(
+  sopId: string,
+  versionNumber: number,
+  buffer: Buffer,
+): Promise<string> {
+  const relativePath = path.join("sops", sopId, `v${versionNumber}.pdf`);
+  const absolutePath = resolveUploadPath(relativePath);
+  await mkdir(path.dirname(absolutePath), { recursive: true });
+  await writeFile(absolutePath, buffer);
+  return relativePath;
+}
+
+export function pdfPathFor(docxRelativePath: string): string {
+  return docxRelativePath.replace(/\.docx$/, ".pdf");
+}
+
 export function resolveUploadPath(relativePath: string): string {
   return path.join(/* turbopackIgnore: true */ process.cwd(), UPLOADS_DIR, relativePath);
 }
