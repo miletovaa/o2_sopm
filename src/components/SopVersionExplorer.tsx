@@ -66,12 +66,22 @@ export function SopVersionExplorer({
           {new Date(selected.uploadedAt).toLocaleString()} by{" "}
           {selected.uploadedByUsername}
         </p>
-        <a
-          href={fileUrl}
-          className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
-        >
-          Download this version (.docx)
-        </a>
+        <div className="flex items-center gap-2">
+          Download this version: 
+          <a
+            href={pdfUrl}
+            download
+            className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+          >
+            PDF
+          </a>
+          <a
+            href={fileUrl}
+            className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+          >
+            DOCX
+          </a>
+        </div>
       </div>
 
       <PdfViewer src={pdfUrl} />
@@ -138,13 +148,23 @@ export function SopVersionExplorer({
                       {version.changeNote ?? "—"}
                     </td>
                     <td className="py-2 pr-4">
-                      <a
-                        href={`/api/sops/${sopId}/versions/${version.versionNumber}/file`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-black hover:underline dark:text-zinc-50"
-                      >
-                        Download
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`/api/sops/${sopId}/versions/${version.versionNumber}/pdf`}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border border-black/10 px-2 py-0.5 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+                        >
+                          PDF
+                        </a>
+                        <a
+                          href={`/api/sops/${sopId}/versions/${version.versionNumber}/file`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border border-black/10 px-2 py-0.5 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+                        >
+                          DOCX
+                        </a>
+                      </div>
                     </td>
                     <td className="py-2">
                       <button
