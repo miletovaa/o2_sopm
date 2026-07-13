@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PdfViewer } from "@/components/PdfViewer";
 
 export type VersionSummary = {
@@ -19,15 +20,41 @@ export function SopVersionExplorer({
   versions: VersionSummary[];
   showHistory: boolean;
 }) {
+  const router = useRouter();
   const currentVersionNumber = versions[0].versionNumber;
   const [selectedVersionNumber, setSelectedVersionNumber] =
     useState(currentVersionNumber);
+  const [deletingVersionNumber, setDeletingVersionNumber] = useState<
+    number | null
+  >(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const selected =
     versions.find((v) => v.versionNumber === selectedVersionNumber) ??
     versions[0];
   const fileUrl = `/api/sops/${sopId}/versions/${selected.versionNumber}/file`;
   const pdfUrl = `/api/sops/${sopId}/versions/${selected.versionNumber}/pdf`;
+
+  async function handleDeleteVersion(versionNumber: number) {
+    if (
+      !confirm(`Delete version ${versionNumber}? This cannot be undone.`)
+    ) {
+      return;
+    }
+    setDeletingVersionNumber(versionNumber);
+    setDeleteError(null);
+    const response = await fetch(
+      `/api/sops/${sopId}/versions/${versionNumber}`,
+      { method: "DELETE" },
+    );
+    if (response.ok) {
+      router.refresh();
+    } else {
+      const body = await response.json().catch(() => ({}));
+      setDeleteError(body.error ?? "Failed to delete version.");
+    }
+    setDeletingVersionNumber(null);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -57,6 +84,11 @@ export function SopVersionExplorer({
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Click a version to view it above.
           </p>
+          {deleteError && (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              {deleteError}
+            </p>
+          )}
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-black/10 text-xs uppercase text-zinc-500 dark:border-white/10 dark:text-zinc-400">
@@ -64,13 +96,17 @@ export function SopVersionExplorer({
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4">Author</th>
                 <th className="py-2 pr-4">Change note</th>
-                <th className="py-2">Download</th>
+                <th className="py-2 pr-4">Download</th>
+                <th className="py-2">Delete</th>
               </tr>
             </thead>
             <tbody>
               {versions.map((version) => {
                 const isSelected =
                   version.versionNumber === selected.versionNumber;
+                const isOnlyVersion = versions.length <= 1;
+                const isDeleting =
+                  deletingVersionNumber === version.versionNumber;
                 return (
                   <tr
                     key={version.versionNumber}
@@ -101,7 +137,7 @@ export function SopVersionExplorer({
                     <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
                       {version.changeNote ?? "—"}
                     </td>
-                    <td className="py-2">
+                    <td className="py-2 pr-4">
                       <a
                         href={`/api/sops/${sopId}/versions/${version.versionNumber}/file`}
                         onClick={(e) => e.stopPropagation()}
@@ -109,6 +145,24 @@ export function SopVersionExplorer({
                       >
                         Download
                       </a>
+                    </td>
+                    <td className="py-2">
+                      <button
+                        type="button"
+                        disabled={isOnlyVersion || isDeleting}
+                        title={
+                          isOnlyVersion
+                            ? "Can't delete the only version — delete the SOP instead"
+                            : undefined
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteVersion(version.versionNumber);
+                        }}
+                        className="text-red-600 hover:underline disabled:cursor-not-allowed disabled:text-zinc-400 disabled:no-underline dark:text-red-400 dark:disabled:text-zinc-600"
+                      >
+                        {isDeleting ? "Deleting…" : "Delete"}
+                      </button>
                     </td>
                   </tr>
                 );

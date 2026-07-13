@@ -48,6 +48,14 @@ async function SiteHeader() {
         SOP<span className="text-gray-500">Manager</span>
       </Link>
       <div className="flex items-center gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+        {user && (
+          <Link
+            href="/reference-materials"
+            className="mr-4 font-medium hover:underline dark:text-zinc-50"
+          >
+            Reference files
+          </Link>
+        )}
         <UploadSopButton isEmployee={user?.role === "EMPLOYEE"} />
         {user && (
           <span className="mr-4">

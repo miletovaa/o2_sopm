@@ -5,15 +5,16 @@ import { authConfig } from "@/auth.config";
 const { auth } = NextAuth(authConfig);
 
 // Routes only Employees may reach: version history, edit/upload, and
-// management of reference & safety materials. Students are read-only on the
-// current SOP version and never see any of this.
+// uploading reference & safety materials. Students can still read the
+// reference/safety material lists and download files — just not add to
+// them.
 const EMPLOYEE_ONLY_PATTERNS = [
   /^\/admin(\/|$)/,
   /^\/sops\/new(\/|$)/,
   /^\/sops\/[^/]+\/edit(\/|$)/,
   /^\/sops\/[^/]+\/history(\/|$)/,
-  /^\/reference-materials(\/|$)/,
-  /^\/safety-materials(\/|$)/,
+  /^\/reference-materials\/new(\/|$)/,
+  /^\/safety-materials\/new(\/|$)/,
 ];
 
 export default auth((req) => {

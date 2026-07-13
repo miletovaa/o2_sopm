@@ -18,6 +18,7 @@ export default async function SopDetailPage({
       include: {
         analysisType: true,
         foodCategory: true,
+        referenceMaterials: { orderBy: { name: "asc" } },
         versions: {
           orderBy: { versionNumber: "desc" },
           include: { uploadedBy: { select: { username: true } } },
@@ -48,12 +49,20 @@ export default async function SopDetailPage({
           {sop.title}
         </h1>
         {isEmployee && (
-          <a
-            href={`/sops/${sop.id}/edit`}
-            className="rounded bg-black px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-          >
-            Upload new version
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href={`/sops/${sop.id}/edit#details`}
+              className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+            >
+              Edit details
+            </a>
+            <a
+              href={`/sops/${sop.id}/edit#new-version`}
+              className="rounded bg-black px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            >
+              Upload new version
+            </a>
+          </div>
         )}
       </div>
 
@@ -67,6 +76,26 @@ export default async function SopDetailPage({
           changeNote: version.changeNote,
         }))}
       />
+
+      {sop.referenceMaterials.length > 0 && (
+        <div className="mt-2 flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-black dark:text-zinc-50">
+            Reference materials
+          </h2>
+          <ul className="flex flex-col gap-1">
+            {sop.referenceMaterials.map((material) => (
+              <li key={material.id}>
+                <a
+                  href={`/api/reference-materials/${material.id}/file`}
+                  className="text-sm text-black hover:underline dark:text-zinc-50"
+                >
+                  {material.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

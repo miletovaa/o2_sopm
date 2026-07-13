@@ -25,11 +25,14 @@ async function main() {
   const analysisTypes = ["Isotope Analysis", "Fatty Acid Analysis", "Multi-Element Analysis"];
   const foodCategories = ["Meat", "Fish", "Apples", "Honey"];
 
-  await Promise.all(
-    analysisTypes.map((name) =>
-      prisma.analysisType.upsert({ where: { name }, update: {}, create: { name } }),
-    ),
-  );
+  for (const name of analysisTypes) {
+    const existing = await prisma.analysisType.findFirst({
+      where: { name, parentId: null },
+    });
+    if (!existing) {
+      await prisma.analysisType.create({ data: { name, parentId: null } });
+    }
+  }
   await Promise.all(
     foodCategories.map((name) =>
       prisma.foodCategory.upsert({ where: { name }, update: {}, create: { name } }),

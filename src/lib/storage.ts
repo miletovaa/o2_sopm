@@ -39,6 +39,26 @@ export function pdfPathFor(docxRelativePath: string): string {
   return docxRelativePath.replace(/\.docx$/, ".pdf");
 }
 
+// Reference materials can be any file type (xlsx, pdf, docx, ...) and are
+// never parsed or converted — just stored and served back for download. The
+// on-disk name is fixed ("file", no extension derived from user input); the
+// real filename is kept in the DB (originalFilename) and only ever used in
+// the Content-Disposition header, never as part of a filesystem path.
+export async function saveReferenceMaterialFile(
+  referenceMaterialId: string,
+  buffer: Buffer,
+): Promise<string> {
+  const relativePath = path.join(
+    "reference-materials",
+    referenceMaterialId,
+    "file",
+  );
+  const absolutePath = resolveUploadPath(relativePath);
+  await mkdir(path.dirname(absolutePath), { recursive: true });
+  await writeFile(absolutePath, buffer);
+  return relativePath;
+}
+
 export function resolveUploadPath(relativePath: string): string {
   return path.join(/* turbopackIgnore: true */ process.cwd(), UPLOADS_DIR, relativePath);
 }

@@ -2,90 +2,106 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import type { Prisma } from "@/generated/prisma/client";
+import { GroupBySelect } from "@/components/GroupBySelect";
+import { FoldTreeButton, TREE_CONTAINER_ID } from "@/components/FoldTreeButton";
 
 type SopWithRelations = Prisma.SopGetPayload<{
   include: {
-    analysisType: true;
+    analysisType: { include: { parent: { include: { parent: true } } } };
     foodCategory: true;
+    instrument: true;
     versions: { include: { uploadedBy: { select: { username: true } } } };
   };
 }>;
 
-type TreeGroupBy = "analysisType" | "foodCategory";
+type TreeGroupBy = "analysisType" | "foodCategory" | "instrument";
 type ListSort = "date-asc" | "date-desc";
 
 function sortedEntries<V>(map: Map<string, V>) {
   return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 }
 
-function groupSops(sops: SopWithRelations[], groupBy: TreeGroupBy) {
-  const outerKey = (sop: SopWithRelations) =>
-    groupBy === "foodCategory" ? sop.foodCategory.name : sop.analysisType.name;
-  const innerKey = (sop: SopWithRelations) =>
-    groupBy === "foodCategory" ? sop.analysisType.name : sop.foodCategory.name;
-
-  const grouped = new Map<string, Map<string, SopWithRelations[]>>();
-  for (const sop of sops) {
-    const outer = outerKey(sop);
-    const inner = innerKey(sop);
-    if (!grouped.has(outer)) grouped.set(outer, new Map());
-    const innerMap = grouped.get(outer)!;
-    if (!innerMap.has(inner)) innerMap.set(inner, []);
-    innerMap.get(inner)!.push(sop);
-  }
-  return grouped;
+// Walks up to the root (up to 3 levels: e.g. Isotope Analysis > BSIA > CN).
+function analysisTypePath(
+  analysisType: SopWithRelations["analysisType"],
+): string[] {
+  const path: string[] = [];
+  if (analysisType.parent?.parent) path.push(analysisType.parent.parent.name);
+  if (analysisType.parent) path.push(analysisType.parent.name);
+  path.push(analysisType.name);
+  return path;
 }
 
-function SopTree({
-  sops,
-  groupBy,
-}: {
+function pathForGroupBy(sop: SopWithRelations, groupBy: TreeGroupBy): string[] {
+  switch (groupBy) {
+    case "foodCategory":
+      return [sop.foodCategory.name, ...analysisTypePath(sop.analysisType)];
+    case "instrument":
+      return [sop.instrument?.name ?? "No instrument specified"];
+    case "analysisType":
+    default:
+      return [...analysisTypePath(sop.analysisType), sop.foodCategory.name];
+  }
+}
+
+type TreeNode = {
+  children: Map<string, TreeNode>;
   sops: SopWithRelations[];
-  groupBy: TreeGroupBy;
-}) {
-  const grouped = groupSops(sops, groupBy);
+};
+
+function buildTree(
+  sops: SopWithRelations[],
+  pathFor: (sop: SopWithRelations) => string[],
+): TreeNode {
+  const root: TreeNode = { children: new Map(), sops: [] };
+  for (const sop of sops) {
+    let node = root;
+    for (const segment of pathFor(sop)) {
+      if (!node.children.has(segment)) {
+        node.children.set(segment, { children: new Map(), sops: [] });
+      }
+      node = node.children.get(segment)!;
+    }
+    node.sops.push(sop);
+  }
+  return root;
+}
+
+function TreeNodeView({ node }: { node: TreeNode }) {
   return (
-    <div className="flex flex-col gap-2">
-      {sortedEntries(grouped).map(([outerName, innerMap]) => (
+    <>
+      {sortedEntries(node.children).map(([label, child]) => (
         <details
-          key={outerName}
+          key={label}
           open
           className="rounded border border-black/10 dark:border-white/10"
         >
-          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-bold text-black dark:text-zinc-50">
-            {outerName}
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-black dark:text-zinc-50">
+            {label}
           </summary>
           <div className="flex flex-col gap-1 px-3 pb-3 pl-10">
-            {sortedEntries(innerMap).map(([innerName, sopsForGroup]) => (
-              <details
-                key={innerName}
-                open
-                className="rounded border border-black/5 dark:border-white/5"
-              >
-                <summary className="cursor-pointer select-none px-2 py-1 text-sm text-zinc-700 dark:text-zinc-300">
-                  {innerName}
-                </summary>
-                <ul className="flex flex-col gap-1 py-1 pl-10">
-                  {sopsForGroup.map((sop) => (
-                    <li key={sop.id}>
-                      <Link
-                        href={`/sops/${sop.id}`}
-                        className="text-sm text-black hover:underline dark:text-zinc-50"
-                      >
-                        {sop.title}
-                      </Link>
-                      <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
-                        v{sop.versions[0]?.versionNumber ?? "-"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            ))}
+            <TreeNodeView node={child} />
           </div>
         </details>
       ))}
-    </div>
+      {node.sops.length > 0 && (
+        <ul className="flex flex-col gap-1 py-1 pl-10">
+          {node.sops.map((sop) => (
+            <li key={sop.id}>
+              <Link
+                href={`/sops/${sop.id}`}
+                className="text-sm text-black hover:underline dark:text-zinc-50"
+              >
+                {sop.title}
+              </Link>
+              <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                v{sop.versions[0]?.versionNumber ?? "-"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
@@ -102,8 +118,9 @@ function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
       <thead>
         <tr className="border-b border-black/10 text-xs uppercase text-zinc-500 dark:border-white/10 dark:text-zinc-400">
           <th className="py-2 pr-4">Title</th>
-          <th className="py-2 pr-4">Analysis type</th>
+          <th className="py-2 pr-4">Experiment type</th>
           <th className="py-2 pr-4">Food category</th>
+          <th className="py-2 pr-4">Instrument</th>
           <th className="py-2 pr-4">Version</th>
           <th className="py-2 pr-4">
             <Link
@@ -133,10 +150,13 @@ function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
                 </Link>
               </td>
               <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
-                {sop.analysisType.name}
+                {analysisTypePath(sop.analysisType).join(" > ")}
               </td>
               <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
                 {sop.foodCategory.name}
+              </td>
+              <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
+                {sop.instrument?.name ?? "-"}
               </td>
               <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
                 {current ? `v${current.versionNumber}` : "-"}
@@ -167,15 +187,18 @@ export default async function HomePage({
   } = await searchParams;
   const view = viewParam === "list" ? "list" : "tree";
   const groupBy: TreeGroupBy =
-    groupByParam === "foodCategory" ? "foodCategory" : "analysisType";
+    groupByParam === "foodCategory" || groupByParam === "instrument"
+      ? groupByParam
+      : "analysisType";
   const sort: ListSort = sortParam === "date-asc" ? "date-asc" : "date-desc";
 
   const [session, sops] = await Promise.all([
     auth(),
     prisma.sop.findMany({
       include: {
-        analysisType: true,
+        analysisType: { include: { parent: { include: { parent: true } } } },
         foodCategory: true,
+        instrument: true,
         versions: {
           orderBy: { versionNumber: "desc" },
           take: 1,
@@ -233,27 +256,9 @@ export default async function HomePage({
         </div>
 
         {view === "tree" && (
-          <div className="flex gap-2 text-xs">
-            <Link
-              href="/?view=tree&groupBy=analysisType"
-              className={`rounded px-2 py-1 ${
-                groupBy === "analysisType"
-                  ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-black"
-                  : "border border-black/10 text-zinc-600 dark:border-white/10 dark:text-zinc-400"
-              }`}
-            >
-              By analysis type
-            </Link>
-            <Link
-              href="/?view=tree&groupBy=foodCategory"
-              className={`rounded px-2 py-1 ${
-                groupBy === "foodCategory"
-                  ? "bg-zinc-800 text-white dark:bg-zinc-200 dark:text-black"
-                  : "border border-black/10 text-zinc-600 dark:border-white/10 dark:text-zinc-400"
-              }`}
-            >
-              By food category
-            </Link>
+          <div className="flex items-center gap-2">
+            <GroupBySelect value={groupBy} />
+            <FoldTreeButton />
           </div>
         )}
       </div>
@@ -263,7 +268,11 @@ export default async function HomePage({
           No SOPs have been uploaded yet.
         </p>
       ) : view === "tree" ? (
-        <SopTree sops={sops} groupBy={groupBy} />
+        <div id={TREE_CONTAINER_ID}>
+          <TreeNodeView
+            node={buildTree(sops, (sop) => pathForGroupBy(sop, groupBy))}
+          />
+        </div>
       ) : (
         <SopList sops={sops} sort={sort} />
       )}

@@ -1,6 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
+import {
+  AnalysisTypeFields,
+  inputClass,
+  type AnalysisTypeNode,
+} from "@/components/AnalysisTypeFields";
+import { ReferenceMaterialSelect } from "@/components/ReferenceMaterialSelect";
+
+export type { AnalysisTypeNode };
 
 function stripExtension(filename: string): string {
   return filename.replace(/\.[^./\\]+$/, "");
@@ -9,9 +17,13 @@ function stripExtension(filename: string): string {
 export function NewSopForm({
   analysisTypes,
   foodCategories,
+  instruments,
+  referenceMaterials,
 }: {
-  analysisTypes: string[];
+  analysisTypes: AnalysisTypeNode[];
   foodCategories: string[];
+  instruments: string[];
+  referenceMaterials: { id: string; name: string }[];
 }) {
   const [title, setTitle] = useState("");
   // Tracks whether the title is still the auto-derived one, so picking a
@@ -46,31 +58,15 @@ export function NewSopForm({
           required
           value={title}
           onChange={handleTitleChange}
-          className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
+          className={inputClass}
         />
         <span className="text-xs text-zinc-500">
           Defaults to the file name — edit freely.
         </span>
       </label>
-      <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-        Analysis type
-        <input
-          name="analysisType"
-          type="text"
-          list="analysis-type-options"
-          required
-          placeholder="e.g. Isotope Analysis"
-          className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
-        />
-        <datalist id="analysis-type-options">
-          {analysisTypes.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
-        <span className="text-xs text-zinc-500">
-          Pick an existing type or type a new one to create it.
-        </span>
-      </label>
+
+      <AnalysisTypeFields analysisTypes={analysisTypes} />
+
       <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
         Category
         <input
@@ -79,9 +75,9 @@ export function NewSopForm({
           list="food-category-options"
           required
           placeholder="e.g. Meat"
-          className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
+          className={inputClass}
         />
-        <datalist id="food-category-options" className="border-none">
+        <datalist id="food-category-options">
           {foodCategories.map((name) => (
             <option key={name} value={name} />
           ))}
@@ -90,6 +86,28 @@ export function NewSopForm({
           Pick an existing category or type a new one to create it.
         </span>
       </label>
+
+      <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+        Instrument (optional)
+        <input
+          name="instrument"
+          type="text"
+          list="instrument-options"
+          placeholder="e.g. IRMS"
+          className={inputClass}
+        />
+        <datalist id="instrument-options">
+          {instruments.map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
+        <span className="text-xs text-zinc-500">
+          Pick an existing instrument or type a new one to create it.
+        </span>
+      </label>
+
+      <ReferenceMaterialSelect referenceMaterials={referenceMaterials} />
+
       <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
         Word document (.docx)
         <input
@@ -98,7 +116,7 @@ export function NewSopForm({
           accept=".docx"
           required
           onChange={handleFileChange}
-          className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
+          className={inputClass}
         />
       </label>
       <button

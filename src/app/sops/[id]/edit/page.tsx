@@ -1,21 +1,32 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { EditSopForm } from "@/components/EditSopForm";
+import { buildAnalysisTypeTree } from "@/lib/analysisTypeTree";
 
-export default async function UploadNewVersionPage({
+export default async function EditSopPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
 
-  const sop = await prisma.sop.findUnique({
-    where: { id },
-    include: {
-      analysisType: true,
-      foodCategory: true,
-      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
-    },
-  });
+  const [sop, analysisTypeRows, foodCategories, instruments, referenceMaterials] =
+    await Promise.all([
+      prisma.sop.findUnique({
+        where: { id },
+        include: {
+          analysisType: { include: { parent: { include: { parent: true } } } },
+          foodCategory: true,
+          instrument: true,
+          referenceMaterials: { select: { id: true } },
+          versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+        },
+      }),
+      prisma.analysisType.findMany({ orderBy: { name: "asc" } }),
+      prisma.foodCategory.findMany({ orderBy: { name: "asc" } }),
+      prisma.instrument.findMany({ orderBy: { name: "asc" } }),
+      prisma.referenceMaterial.findMany({ orderBy: { name: "asc" } }),
+    ]);
 
   if (!sop) {
     notFound();
@@ -23,51 +34,92 @@ export default async function UploadNewVersionPage({
 
   const currentVersion = sop.versions[0];
 
+  // Walk from root to the SOP's chosen level so the picker starts prefilled.
+  const analysisTypePath: string[] = [];
+  if (sop.analysisType.parent?.parent) {
+    analysisTypePath.push(sop.analysisType.parent.parent.name);
+  }
+  if (sop.analysisType.parent) {
+    analysisTypePath.push(sop.analysisType.parent.name);
+  }
+  analysisTypePath.push(sop.analysisType.name);
+
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-12">
-      <div className="flex flex-col gap-1">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {sop.analysisType.name} / {sop.foodCategory.name}
-        </p>
-        <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
-          Upload new version — {sop.title}
-        </h1>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Current version: v{currentVersion?.versionNumber ?? 0}
-        </p>
+    <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-10 px-4 py-12">
+      <div id="details" className="flex scroll-mt-6 flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {sop.analysisType.name} / {sop.foodCategory.name}
+          </p>
+          <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
+            Edit SOP details — {sop.title}
+          </h1>
+        </div>
+        <EditSopForm
+          sopId={sop.id}
+          sopTitle={sop.title}
+          analysisTypes={buildAnalysisTypeTree(analysisTypeRows)}
+          foodCategories={foodCategories.map((f) => f.name)}
+          instruments={instruments.map((i) => i.name)}
+          referenceMaterials={referenceMaterials.map((r) => ({
+            id: r.id,
+            name: r.name,
+          }))}
+          initialTitle={sop.title}
+          initialAnalysisTypeLevel1={analysisTypePath[0] ?? ""}
+          initialAnalysisTypeLevel2={analysisTypePath[1] ?? ""}
+          initialAnalysisTypeLevel3={analysisTypePath[2] ?? ""}
+          initialFoodCategory={sop.foodCategory.name}
+          initialInstrument={sop.instrument?.name ?? ""}
+          initialReferenceMaterialIds={sop.referenceMaterials.map((r) => r.id)}
+        />
       </div>
-      <form
-        action={`/api/sops/${sop.id}/versions`}
-        method="post"
-        encType="multipart/form-data"
-        className="flex flex-col gap-4"
+
+      <div
+        id="new-version"
+        className="flex scroll-mt-6 flex-col gap-4 border-t border-black/10 pt-8 dark:border-white/10"
       >
-        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-          Word document (.docx)
-          <input
-            name="file"
-            type="file"
-            accept=".docx"
-            required
-            className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-          Change note (optional)
-          <textarea
-            name="changeNote"
-            rows={3}
-            placeholder="What changed in this version?"
-            className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
-          />
-        </label>
-        <button
-          type="submit"
-          className="mt-2 rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold text-black dark:text-zinc-50">
+            Upload new version
+          </h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Current version: v{currentVersion?.versionNumber ?? 0}
+          </p>
+        </div>
+        <form
+          action={`/api/sops/${sop.id}/versions`}
+          method="post"
+          encType="multipart/form-data"
+          className="flex flex-col gap-4"
         >
-          Upload new version
-        </button>
-      </form>
+          <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+            Word document (.docx)
+            <input
+              name="file"
+              type="file"
+              accept=".docx"
+              required
+              className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+            Change note (optional)
+            <textarea
+              name="changeNote"
+              rows={3}
+              placeholder="What changed in this version?"
+              className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
+            />
+          </label>
+          <button
+            type="submit"
+            className="mt-2 self-start rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          >
+            Upload new version
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -27,13 +27,25 @@ model User {
 }
 
 model AnalysisType {
+  id        String         @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    AnalysisType?  @relation("AnalysisTypeHierarchy", fields: [parentId], references: [id])
+  children  AnalysisType[] @relation("AnalysisTypeHierarchy")
+  createdAt DateTime       @default(now())
+  sops      Sop[]
+
+  @@unique([parentId, name])
+}
+
+model FoodCategory {
   id        String   @id @default(cuid())
   name      String   @unique
   createdAt DateTime @default(now())
   sops      Sop[]
 }
 
-model FoodCategory {
+model Instrument {
   id        String   @id @default(cuid())
   name      String   @unique
   createdAt DateTime @default(now())
@@ -47,12 +59,15 @@ model Sop {
   analysisTypeId     String
   foodCategory       FoodCategory         @relation(fields: [foodCategoryId], references: [id])
   foodCategoryId     String
+  instrument         Instrument?          @relation(fields: [instrumentId], references: [id])
+  instrumentId       String?
   createdAt          DateTime             @default(now())
   versions           SopVersion[]
   referenceMaterials ReferenceMaterial[]  @relation("SopReferenceMaterials")
 
   @@index([analysisTypeId])
   @@index([foodCategoryId])
+  @@index([instrumentId])
 }
 
 model SopVersion {
@@ -71,12 +86,12 @@ model SopVersion {
 }
 
 model ReferenceMaterial {
-  id        String   @id @default(cuid())
-  title     String
-  filePath  String?
-  url       String?
-  createdAt DateTime @default(now())
-  sops      Sop[]    @relation("SopReferenceMaterials")
+  id               String   @id @default(cuid())
+  name             String
+  filePath         String
+  originalFilename String
+  createdAt        DateTime @default(now())
+  sops             Sop[]    @relation("SopReferenceMaterials")
 }
 
 model SafetyMaterial {

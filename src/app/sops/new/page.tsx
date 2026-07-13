@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { NewSopForm } from "@/components/NewSopForm";
+import { buildAnalysisTypeTree } from "@/lib/analysisTypeTree";
 
 export default async function NewSopPage() {
-  const [analysisTypes, foodCategories] = await Promise.all([
-    prisma.analysisType.findMany({ orderBy: { name: "asc" } }),
-    prisma.foodCategory.findMany({ orderBy: { name: "asc" } }),
-  ]);
+  const [analysisTypeRows, foodCategories, instruments, referenceMaterials] =
+    await Promise.all([
+      prisma.analysisType.findMany({ orderBy: { name: "asc" } }),
+      prisma.foodCategory.findMany({ orderBy: { name: "asc" } }),
+      prisma.instrument.findMany({ orderBy: { name: "asc" } }),
+      prisma.referenceMaterial.findMany({ orderBy: { name: "asc" } }),
+    ]);
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-12">
@@ -13,8 +17,13 @@ export default async function NewSopPage() {
         Upload new SOP
       </h1>
       <NewSopForm
-        analysisTypes={analysisTypes.map((a) => a.name)}
+        analysisTypes={buildAnalysisTypeTree(analysisTypeRows)}
         foodCategories={foodCategories.map((f) => f.name)}
+        instruments={instruments.map((i) => i.name)}
+        referenceMaterials={referenceMaterials.map((r) => ({
+          id: r.id,
+          name: r.name,
+        }))}
       />
     </div>
   );
