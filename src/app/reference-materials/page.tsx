@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { ReferenceMaterialRow } from "@/components/ReferenceMaterialRow";
 
 export default async function ReferenceMaterialsPage() {
   const [session, referenceMaterials] = await Promise.all([
@@ -41,12 +42,20 @@ export default async function ReferenceMaterialsPage() {
                 <span className="text-sm text-black dark:text-zinc-50">
                   {material.name}
                 </span>
-                <a
-                  href={`/api/reference-materials/${material.id}/file`}
-                  className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
-                >
-                  Download
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`/api/reference-materials/${material.id}/file`}
+                    className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+                  >
+                    Download
+                  </a>
+                  {isEmployee && (
+                    <ReferenceMaterialRow
+                      id={material.id}
+                      name={material.name}
+                    />
+                  )}
+                </div>
               </li>
             ))}
           </ul>

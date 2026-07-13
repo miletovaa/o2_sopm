@@ -103,7 +103,7 @@ export function SopVersionExplorer({
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
               <tr className="border-b border-black/10 text-xs uppercase text-zinc-500 dark:border-white/10 dark:text-zinc-400">
-                <th className="py-2 pr-4">Version</th>
+                <th className="py-2 px-4">Version</th>
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4">Author</th>
                 <th className="py-2 pr-4">Change note</th>
@@ -131,7 +131,7 @@ export function SopVersionExplorer({
                         : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
                     }`}
                   >
-                    <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
+                    <td className="py-2 px-4 text-zinc-700 dark:text-zinc-300">
                       v{version.versionNumber}
                       {version.versionNumber === currentVersionNumber && (
                         <span className="ml-2 rounded bg-accent/15 px-1.5 py-0.5 text-xs text-heading">

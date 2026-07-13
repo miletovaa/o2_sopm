@@ -1,0 +1,65 @@
+import path from "node:path";
+import { rm } from "node:fs/promises";
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { resolveUploadPath } from "@/lib/storage";
+
+// Renames a reference material. The file itself is untouched.
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth();
+  if (session?.user?.role !== "EMPLOYEE") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const body = await request.json().catch(() => null);
+  const name = body?.name;
+
+  if (typeof name !== "string" || !name.trim()) {
+    return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  }
+
+  const referenceMaterial = await prisma.referenceMaterial.findUnique({
+    where: { id },
+  });
+  if (!referenceMaterial) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  await prisma.referenceMaterial.update({
+    where: { id },
+    data: { name: name.trim() },
+  });
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth();
+  if (session?.user?.role !== "EMPLOYEE") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const referenceMaterial = await prisma.referenceMaterial.findUnique({
+    where: { id },
+  });
+  if (!referenceMaterial) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  await prisma.referenceMaterial.delete({ where: { id } });
+  await rm(resolveUploadPath(path.join("reference-materials", id)), {
+    recursive: true,
+    force: true,
+  });
+
+  return NextResponse.json({ ok: true });
+}
