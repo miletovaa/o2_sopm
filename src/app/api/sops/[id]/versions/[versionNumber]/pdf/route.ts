@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { pdfPathFor, resolveUploadPath } from "@/lib/storage";
+import { contentDisposition } from "@/lib/contentDisposition";
 
 export async function GET(
   _request: Request,
@@ -50,7 +51,7 @@ export async function GET(
       "Content-Type": "application/pdf",
       // inline (not attachment) so it renders in the <iframe>/browser's
       // native PDF viewer instead of triggering a download.
-      "Content-Disposition": `inline; filename="${filename}"`,
+      "Content-Disposition": contentDisposition("inline", filename),
     },
   });
 }

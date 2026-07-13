@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveUploadPath } from "@/lib/storage";
+import { contentDisposition } from "@/lib/contentDisposition";
 
 const DOCX_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -51,7 +52,7 @@ export async function GET(
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": DOCX_MIME_TYPE,
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": contentDisposition("attachment", filename),
     },
   });
 }

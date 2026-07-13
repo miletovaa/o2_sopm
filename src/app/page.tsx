@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import type { Prisma } from "@/generated/prisma/client";
 import { GroupBySelect } from "@/components/GroupBySelect";
 import { FoldTreeButton, TREE_CONTAINER_ID } from "@/components/FoldTreeButton";
+import { SearchInput } from "@/components/SearchInput";
 
 type SopWithRelations = Prisma.SopGetPayload<{
   include: {
@@ -42,6 +43,18 @@ function pathForGroupBy(sop: SopWithRelations, groupBy: TreeGroupBy): string[] {
     default:
       return [...analysisTypePath(sop.analysisType), sop.foodCategory.name];
   }
+}
+
+function matchesQuery(sop: SopWithRelations, query: string): boolean {
+  const haystack = [
+    sop.title,
+    ...analysisTypePath(sop.analysisType),
+    sop.foodCategory.name,
+    sop.instrument?.name ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query);
 }
 
 type TreeNode = {
@@ -105,7 +118,15 @@ function TreeNodeView({ node }: { node: TreeNode }) {
   );
 }
 
-function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
+function SopList({
+  sops,
+  sort,
+  querySuffix,
+}: {
+  sops: SopWithRelations[];
+  sort: ListSort;
+  querySuffix: string;
+}) {
   const nextSort: ListSort = sort === "date-desc" ? "date-asc" : "date-desc";
   const sorted = [...sops].sort((a, b) => {
     const aTime = a.versions[0]?.uploadedAt.getTime() ?? 0;
@@ -125,7 +146,7 @@ function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
             <th className="py-2 pr-4">Version</th>
             <th className="py-2 pr-4">
               <Link
-                href={`/?view=list&sort=${nextSort}`}
+                href={`/?view=list&sort=${nextSort}${querySuffix}`}
                 className="inline-flex items-center gap-1 hover:underline"
               >
                 Last&nbsp;updated&nbsp;{sort === "date-desc" ? "▼" : "▲"}
@@ -180,12 +201,18 @@ function SopList({ sops, sort }: { sops: SopWithRelations[]; sort: ListSort }) {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; groupBy?: string; sort?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    groupBy?: string;
+    sort?: string;
+    q?: string;
+  }>;
 }) {
   const {
     view: viewParam,
     groupBy: groupByParam,
     sort: sortParam,
+    q: qParam,
   } = await searchParams;
   const view = viewParam === "list" ? "list" : "tree";
   const groupBy: TreeGroupBy =
@@ -193,8 +220,10 @@ export default async function HomePage({
       ? groupByParam
       : "analysisType";
   const sort: ListSort = sortParam === "date-asc" ? "date-asc" : "date-desc";
+  const q = (qParam ?? "").trim();
+  const querySuffix = q ? `&q=${encodeURIComponent(q)}` : "";
 
-  const [session, sops] = await Promise.all([
+  const [session, allSops] = await Promise.all([
     auth(),
     prisma.sop.findMany({
       include: {
@@ -216,6 +245,10 @@ export default async function HomePage({
   ]);
 
   const isEmployee = session?.user?.role === "EMPLOYEE";
+  const normalizedQuery = q.toLowerCase();
+  const sops = normalizedQuery
+    ? allSops.filter((sop) => matchesQuery(sop, normalizedQuery))
+    : allSops;
 
   return (
     <div className="mx-auto my-8 flex w-full max-w-5xl flex-1 flex-col gap-4 px-4">
@@ -237,7 +270,7 @@ export default async function HomePage({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex gap-2 text-sm">
             <Link
-              href="/?view=tree"
+              href={`/?view=tree${querySuffix}`}
               className={`rounded px-3 py-1 ${
                 view === "tree"
                   ? "bg-accent text-white"
@@ -247,7 +280,7 @@ export default async function HomePage({
               Tree view
             </Link>
             <Link
-              href="/?view=list"
+              href={`/?view=list${querySuffix}`}
               className={`rounded px-3 py-1 ${
                 view === "list"
                   ? "bg-accent text-white"
@@ -258,17 +291,22 @@ export default async function HomePage({
             </Link>
           </div>
 
-          {view === "tree" && (
-            <div className="flex items-center gap-2">
-              <GroupBySelect value={groupBy} />
-              <FoldTreeButton />
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <SearchInput defaultValue={q} />
+            {view === "tree" && (
+              <>
+                <GroupBySelect value={groupBy} />
+                <FoldTreeButton />
+              </>
+            )}
+          </div>
         </div>
 
         {sops.length === 0 ? (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            No SOPs have been uploaded yet.
+            {allSops.length === 0
+              ? "No SOPs have been uploaded yet."
+              : "No SOPs match your search."}
           </p>
         ) : view === "tree" ? (
           <div id={TREE_CONTAINER_ID}>
@@ -277,7 +315,7 @@ export default async function HomePage({
             />
           </div>
         ) : (
-          <SopList sops={sops} sort={sort} />
+          <SopList sops={sops} sort={sort} querySuffix={querySuffix} />
         )}
       </div>
     </div>

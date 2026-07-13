@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveUploadPath } from "@/lib/storage";
 import { guessContentType } from "@/lib/mimeType";
+import { contentDisposition } from "@/lib/contentDisposition";
 
 export async function GET(
   _request: Request,
@@ -30,7 +31,7 @@ export async function GET(
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": guessContentType(filename),
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": contentDisposition("attachment", filename),
     },
   });
 }
