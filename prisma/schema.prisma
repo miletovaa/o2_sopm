@@ -95,9 +95,9 @@ model ReferenceMaterial {
 }
 
 model SafetyMaterial {
-  id        String   @id @default(cuid())
-  title     String
-  filePath  String?
-  url       String?
-  createdAt DateTime @default(now())
+  id               String   @id @default(cuid())
+  name             String
+  filePath         String
+  originalFilename String
+  createdAt        DateTime @default(now())
 }

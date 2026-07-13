@@ -15,17 +15,15 @@ export async function GET(
   }
 
   const { id } = await params;
-  const referenceMaterial = await prisma.referenceMaterial.findUnique({
+  const safetyMaterial = await prisma.safetyMaterial.findUnique({
     where: { id },
   });
-  if (!referenceMaterial) {
+  if (!safetyMaterial) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const buffer = await readFile(
-    resolveUploadPath(referenceMaterial.filePath),
-  );
-  const filename = referenceMaterial.originalFilename.replace(/[/\\]/g, "-");
+  const buffer = await readFile(resolveUploadPath(safetyMaterial.filePath));
+  const filename = safetyMaterial.originalFilename.replace(/[/\\]/g, "-");
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

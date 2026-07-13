@@ -41,22 +41,32 @@ async function SiteHeader() {
 
   return (
     <header className="flex items-center justify-between border-b border-black/10 px-6 py-3 dark:border-white/10">
-      <Link
-        href="/"
-        className="text-xl font-semibold dark:text-zinc-50"
-      >
-        SOP<span className="text-gray-500">Manager</span>
-      </Link>
       <div className="flex items-center gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-        {user && (
-          <Link
-            href="/reference-materials"
-            className="mr-4 font-medium hover:underline dark:text-zinc-50"
-          >
-            Reference files
-          </Link>
-        )}
-        <UploadSopButton isEmployee={user?.role === "EMPLOYEE"} />
+        <Link
+          href="/"
+          className="mr-4 text-xl font-semibold dark:text-zinc-50"
+        >
+          SOP<span className="text-gray-500">Manager</span>
+        </Link>
+          {user && (
+            <Link
+              href="/reference-materials"
+              className="mr-4 mt-1 font-bold hover:underline dark:text-zinc-50"
+            >
+              Reference files
+            </Link>
+          )}
+          {user && (
+            <Link
+              href="/safety-materials"
+              className="mr-4 mt-1 font-bold hover:underline dark:text-zinc-50"
+            >
+              Safety materials
+            </Link>
+          )}
+          <UploadSopButton isEmployee={user?.role === "EMPLOYEE"} />
+      </div>
+      <div className="flex items-center gap-1 text-sm text-zinc-700 dark:text-zinc-300">
         {user && (
           <span className="mr-4">
             {user.name} (<i>{user.role.toLowerCase()}</i>)

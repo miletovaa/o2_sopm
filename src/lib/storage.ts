@@ -59,6 +59,23 @@ export async function saveReferenceMaterialFile(
   return relativePath;
 }
 
+// Same idea as reference materials: any file type, never parsed, fixed
+// on-disk name, real filename kept in the DB.
+export async function saveSafetyMaterialFile(
+  safetyMaterialId: string,
+  buffer: Buffer,
+): Promise<string> {
+  const relativePath = path.join(
+    "safety-materials",
+    safetyMaterialId,
+    "file",
+  );
+  const absolutePath = resolveUploadPath(relativePath);
+  await mkdir(path.dirname(absolutePath), { recursive: true });
+  await writeFile(absolutePath, buffer);
+  return relativePath;
+}
+
 export function resolveUploadPath(relativePath: string): string {
   return path.join(/* turbopackIgnore: true */ process.cwd(), UPLOADS_DIR, relativePath);
 }

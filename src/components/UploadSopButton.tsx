@@ -19,7 +19,7 @@ export function UploadSopButton({ isEmployee }: { isEmployee: boolean }) {
   return (
     <Link
       href="/sops/new"
-      className="mr-4 rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+      className="mr-4 mt-1 font-bold hover:underline dark:text-zinc-50"
     >
       Upload new SOP
     </Link>
