@@ -127,7 +127,7 @@ export function EditSopForm({
 
         <button
           type="submit"
-          className="mt-2 self-start rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          className="mt-2 self-start rounded bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
         >
           Save changes
         </button>

@@ -88,7 +88,7 @@ export function SopVersionExplorer({
 
       {showHistory && (
         <div className="mt-4 flex flex-col gap-2">
-          <h2 className="text-sm font-semibold text-black dark:text-zinc-50">
+          <h2 className="text-sm font-semibold text-heading">
             Version history
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -99,8 +99,9 @@ export function SopVersionExplorer({
               {deleteError}
             </p>
           )}
-          <table className="w-full text-left text-sm">
-            <thead>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
               <tr className="border-b border-black/10 text-xs uppercase text-zinc-500 dark:border-white/10 dark:text-zinc-400">
                 <th className="py-2 pr-4">Version</th>
                 <th className="py-2 pr-4">Date</th>
@@ -126,14 +127,14 @@ export function SopVersionExplorer({
                     aria-selected={isSelected}
                     className={`cursor-pointer border-b border-black/5 dark:border-white/5 ${
                       isSelected
-                        ? "bg-zinc-100 dark:bg-zinc-800"
+                        ? "bg-accent/10 dark:bg-accent/20"
                         : "hover:bg-zinc-50 dark:hover:bg-zinc-900"
                     }`}
                   >
                     <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
                       v{version.versionNumber}
                       {version.versionNumber === currentVersionNumber && (
-                        <span className="ml-2 rounded bg-zinc-200 px-1.5 py-0.5 text-xs text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200">
+                        <span className="ml-2 rounded bg-accent/15 px-1.5 py-0.5 text-xs text-heading">
                           current
                         </span>
                       )}
@@ -189,6 +190,7 @@ export function SopVersionExplorer({
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

@@ -34,7 +34,7 @@ export default async function SopDetailPage({
   const isEmployee = session?.user?.role === "EMPLOYEE";
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-12">
+    <div className="mx-auto my-8 flex w-full max-w-5xl flex-1 flex-col gap-4 px-4">
       <Link
         href="/"
         className="text-sm text-zinc-600 hover:underline dark:text-zinc-400"
@@ -45,7 +45,7 @@ export default async function SopDetailPage({
         {sop.analysisType.name} / {sop.foodCategory.name}
       </p>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-black dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold text-heading">
           {sop.title}
         </h1>
         {isEmployee && (
@@ -58,7 +58,7 @@ export default async function SopDetailPage({
             </a>
             <a
               href={`/sops/${sop.id}/edit#new-version`}
-              className="rounded bg-black px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              className="rounded bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover"
             >
               Upload new version
             </a>
@@ -66,36 +66,38 @@ export default async function SopDetailPage({
         )}
       </div>
 
-      <SopVersionExplorer
-        sopId={sop.id}
-        showHistory={isEmployee}
-        versions={sop.versions.map((version) => ({
-          versionNumber: version.versionNumber,
-          uploadedAt: version.uploadedAt.toISOString(),
-          uploadedByUsername: version.uploadedBy.username,
-          changeNote: version.changeNote,
-        }))}
-      />
+      <div className="flex flex-col gap-4 rounded-lg bg-white p-6 shadow-sm sm:p-8 dark:bg-zinc-900">
+        <SopVersionExplorer
+          sopId={sop.id}
+          showHistory={isEmployee}
+          versions={sop.versions.map((version) => ({
+            versionNumber: version.versionNumber,
+            uploadedAt: version.uploadedAt.toISOString(),
+            uploadedByUsername: version.uploadedBy.username,
+            changeNote: version.changeNote,
+          }))}
+        />
 
-      {sop.referenceMaterials.length > 0 && (
-        <div className="mt-2 flex flex-col gap-2">
-          <h2 className="text-sm font-semibold text-black dark:text-zinc-50">
-            Reference materials
-          </h2>
-          <ul className="flex flex-col gap-1">
-            {sop.referenceMaterials.map((material) => (
-              <li key={material.id}>
-                <a
-                  href={`/api/reference-materials/${material.id}/file`}
-                  className="text-sm text-black hover:underline dark:text-zinc-50"
-                >
-                  {material.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {sop.referenceMaterials.length > 0 && (
+          <div className="mt-2 flex flex-col gap-2">
+            <h2 className="text-sm font-semibold text-heading">
+              Reference materials
+            </h2>
+            <ul className="flex flex-col gap-1">
+              {sop.referenceMaterials.map((material) => (
+                <li key={material.id}>
+                  <a
+                    href={`/api/reference-materials/${material.id}/file`}
+                    className="text-sm text-black hover:underline dark:text-zinc-50"
+                  >
+                    {material.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

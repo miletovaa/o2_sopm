@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Figtree, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import Script from "next/script";
 import { auth, signOut } from "@/auth";
@@ -20,8 +20,8 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const figtree = Figtree({
+  variable: "--font-figtree",
   subsets: ["latin"],
 });
 
@@ -40,18 +40,18 @@ async function SiteHeader() {
   const user = session?.user;
 
   return (
-    <header className="flex items-center justify-between border-b border-black/10 px-6 py-3 dark:border-white/10">
+    <header className="flex items-center justify-between border-b border-black/10 bg-white px-10 py-3 dark:border-white/10 dark:bg-zinc-900">
       <div className="flex items-center gap-1 text-sm text-zinc-700 dark:text-zinc-300">
         <Link
           href="/"
-          className="mr-4 text-xl font-semibold dark:text-zinc-50"
+          className="mr-4 text-lg text-heading"
         >
-          SOP<span className="text-gray-500">Manager</span>
+          SOP<span className="text-heading/60">Manager</span>
         </Link>
           {user && (
             <Link
               href="/reference-materials"
-              className="mr-4 mt-1 font-bold hover:underline dark:text-zinc-50"
+              className="mr-4 mt-1 hover:text-heading hover:underline"
             >
               Reference files
             </Link>
@@ -59,7 +59,7 @@ async function SiteHeader() {
           {user && (
             <Link
               href="/safety-materials"
-              className="mr-4 mt-1 font-bold hover:underline dark:text-zinc-50"
+              className="mr-4 mt-1 hover:text-heading hover:underline"
             >
               Safety materials
             </Link>
@@ -116,7 +116,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${figtree.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Script

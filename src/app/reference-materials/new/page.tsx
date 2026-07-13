@@ -8,11 +8,13 @@ export default async function NewReferenceMaterialPage() {
   });
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-12">
-      <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
+    <div className="mx-auto my-8 flex w-full max-w-5xl flex-1 flex-col gap-4 px-4">
+      <h1 className="text-xl font-semibold text-heading">
         Upload new reference file
       </h1>
-      <NewReferenceMaterialForm sops={sops} />
+      <div className="rounded-lg bg-white p-6 shadow-sm sm:p-8 dark:bg-zinc-900">
+        <NewReferenceMaterialForm sops={sops} />
+      </div>
     </div>
   );
 }
