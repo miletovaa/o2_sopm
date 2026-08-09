@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 const OPTIONS = [
   { value: "analysisType", label: "By experiment type" },
-  { value: "foodCategory", label: "By food category" },
+  { value: "foodCategory", label: "By category" },
   { value: "instrument", label: "By instrument" },
 ];
 

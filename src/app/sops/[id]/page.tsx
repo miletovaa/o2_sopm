@@ -54,13 +54,13 @@ export default async function SopDetailPage({
               href={`/sops/${sop.id}/edit#details`}
               className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
             >
-              Edit details
+              Edit&nbsp;details
             </a>
             <a
               href={`/sops/${sop.id}/edit#new-version`}
               className="rounded bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover"
             >
-              Upload new version
+              Upload&nbsp;new&nbsp;version
             </a>
           </div>
         )}
