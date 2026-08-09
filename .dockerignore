@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+uploads
+*.md
+.env
+.env.*
+!.env.example
+selfsigned.crt
+selfsigned.key
+npm-debug.log*
+.DS_Store

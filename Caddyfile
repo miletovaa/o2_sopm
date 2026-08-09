@@ -1,0 +1,18 @@
+# No domain name (IP-only access), so Caddy's automatic Let's Encrypt HTTPS
+# doesn't apply — it can't get a cert for a bare IP. Instead we hand it the
+# self-signed cert/key generated locally (selfsigned.crt/key). Browsers will
+# show a "not trusted" warning on first visit; that's expected for
+# self-signed certs and can be clicked through / the cert can be trusted
+# manually on client machines.
+{
+	auto_https off
+}
+
+:80 {
+	redir https://{host}{uri} permanent
+}
+
+:443 {
+	tls /certs/selfsigned.crt /certs/selfsigned.key
+	reverse_proxy app:3000
+}

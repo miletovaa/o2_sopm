@@ -7,7 +7,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sopm}
       POSTGRES_DB: ${POSTGRES_DB:-sopm}
     ports:
-      - "5433:5432"
+      # Bound to localhost only — the DB should never be reachable from the
+      # public internet. Use `ssh -L 5433:localhost:5433 <server>` to reach
+      # it from your own machine (e.g. for psql/pg_dump) when needed.
+      - "127.0.0.1:5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,5 +19,59 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sopm}:${POSTGRES_PASSWORD:-sopm}@db:5432/${POSTGRES_DB:-sopm}?schema=public
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: ${AUTH_URL}
+      UPLOADS_DIR: ./uploads
+    volumes:
+      - ./uploads:/app/uploads
+    ports:
+      # Only exposed on localhost — Caddy is what the outside world talks
+      # to; it terminates TLS and proxies to the app over the internal
+      # compose network (see Caddyfile).
+      - "127.0.0.1:3000:3000"
+
+  # One-off jobs, not part of the long-running stack. Run with e.g.:
+  #   docker compose run --rm migrate npx prisma migrate deploy
+  #   docker compose run --rm migrate npx prisma db seed
+  migrate:
+    build:
+      context: .
+      target: builder
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sopm}:${POSTGRES_PASSWORD:-sopm}@db:5432/${POSTGRES_DB:-sopm}?schema=public
+      SEED_EMPLOYEE_PASSWORD: ${SEED_EMPLOYEE_PASSWORD}
+      SEED_STUDENT_PASSWORD: ${SEED_STUDENT_PASSWORD}
+    entrypoint: []
+    command: ["true"]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./selfsigned.crt:/certs/selfsigned.crt:ro
+      - ./selfsigned.key:/certs/selfsigned.key:ro
+      - caddy_data:/data
+
 volumes:
   db_data:
+  caddy_data:
