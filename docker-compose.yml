@@ -58,20 +58,12 @@ services:
     entrypoint: []
     command: ["true"]
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    depends_on:
-      - app
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./selfsigned.crt:/certs/selfsigned.crt:ro
-      - ./selfsigned.key:/certs/selfsigned.key:ro
-      - caddy_data:/data
+  # No embedded Caddy here — this VPS also hosts a second, unrelated site
+  # (org_dma), so ONE shared Caddy instance (outside both projects, see the
+  # deploy guide's "edge" setup) owns the public 80/443 ports and reverse
+  # proxies to this app's 127.0.0.1:3000 above. Caddyfile/selfsigned.crt/key
+  # in this repo are kept for local single-site deployments but aren't used
+  # in the shared-VPS setup.
 
 volumes:
   db_data:
-  caddy_data:
