@@ -5,6 +5,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { GroupBySelect } from "@/components/GroupBySelect";
 import { FoldTreeButton, TREE_CONTAINER_ID } from "@/components/FoldTreeButton";
 import { SearchInput } from "@/components/SearchInput";
+import { canManageContent } from "@/lib/roles";
 
 type SopWithRelations = Prisma.SopGetPayload<{
   include: {
@@ -244,7 +245,7 @@ export default async function HomePage({
     }),
   ]);
 
-  const isEmployee = session?.user?.role === "EMPLOYEE";
+  const isEmployee = canManageContent(session?.user?.role);
   const normalizedQuery = q.toLowerCase();
   const sops = normalizedQuery
     ? allSops.filter((sop) => matchesQuery(sop, normalizedQuery))

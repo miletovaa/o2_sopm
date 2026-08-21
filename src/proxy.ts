@@ -1,15 +1,15 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/auth.config";
+import { canManageContent } from "@/lib/roles";
 
 const { auth } = NextAuth(authConfig);
 
-// Routes only Employees may reach: version history, edit/upload, and
+// Routes only Admins/Employees may reach: version history, edit/upload, and
 // uploading reference & safety materials. Students can still read the
 // reference/safety material lists and download files — just not add to
 // them.
-const EMPLOYEE_ONLY_PATTERNS = [
-  /^\/admin(\/|$)/,
+const STAFF_ONLY_PATTERNS = [
   /^\/sops\/new(\/|$)/,
   /^\/sops\/[^/]+\/edit(\/|$)/,
   /^\/sops\/[^/]+\/history(\/|$)/,
@@ -17,10 +17,14 @@ const EMPLOYEE_ONLY_PATTERNS = [
   /^\/safety-materials\/new(\/|$)/,
 ];
 
+// The Users page itself: Admins can create Admins/Employees/Students,
+// Employees can only create Students. Students can't reach it at all.
+const USERS_PATTERNS = [/^\/users(\/|$)/];
+
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth?.user;
-  const isEmployee = req.auth?.user?.role === "EMPLOYEE";
+  const role = req.auth?.user?.role;
 
   if (!isLoggedIn) {
     const loginUrl = new URL("/login", nextUrl);
@@ -28,10 +32,17 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  const requiresEmployee = EMPLOYEE_ONLY_PATTERNS.some((pattern) =>
+  const requiresStaff = STAFF_ONLY_PATTERNS.some((pattern) =>
     pattern.test(nextUrl.pathname),
   );
-  if (requiresEmployee && !isEmployee) {
+  if (requiresStaff && !canManageContent(role)) {
+    return NextResponse.redirect(new URL("/", nextUrl));
+  }
+
+  const requiresUsersAccess = USERS_PATTERNS.some((pattern) =>
+    pattern.test(nextUrl.pathname),
+  );
+  if (requiresUsersAccess && !canManageContent(role)) {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 

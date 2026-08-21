@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canManageContent } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
 import { resolveUploadPath } from "@/lib/storage";
 import { contentDisposition } from "@/lib/contentDisposition";
@@ -39,7 +40,7 @@ export async function GET(
   // Everyone with access to the SOP can download the current version; only
   // Employees can reach older, superseded versions.
   const isCurrentVersion = sop.versions[0]?.id === version.id;
-  if (!isCurrentVersion && session.user.role !== "EMPLOYEE") {
+  if (!isCurrentVersion && !canManageContent(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

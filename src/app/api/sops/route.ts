@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canManageContent } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
 import { extractDocxText } from "@/lib/docx";
 import { convertDocxToPdf } from "@/lib/pdf";
@@ -17,7 +18,7 @@ const DOCX_MIME_TYPE =
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (session?.user?.role !== "EMPLOYEE") {
+  if (!session || !canManageContent(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

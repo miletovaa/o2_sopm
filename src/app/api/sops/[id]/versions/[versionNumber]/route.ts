@@ -1,6 +1,7 @@
 import { rm } from "node:fs/promises";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canManageContent } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
 import { pdfPathFor, resolveUploadPath } from "@/lib/storage";
 
@@ -9,7 +10,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; versionNumber: string }> },
 ) {
   const session = await auth();
-  if (session?.user?.role !== "EMPLOYEE") {
+  if (!session || !canManageContent(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

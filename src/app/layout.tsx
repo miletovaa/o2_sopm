@@ -5,6 +5,7 @@ import Script from "next/script";
 import { auth, signOut } from "@/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UploadSopButton } from "@/components/UploadSopButton";
+import { canManageContent } from "@/lib/roles";
 import "./globals.css";
 
 // Runs before hydration so the correct theme class is present for first
@@ -64,7 +65,15 @@ async function SiteHeader() {
               Safety materials
             </Link>
           )}
-          <UploadSopButton isEmployee={user?.role === "EMPLOYEE"} />
+          {user && canManageContent(user.role) && (
+            <Link
+              href="/users"
+              className="mr-4 mt-1 hover:text-heading hover:underline"
+            >
+              Users
+            </Link>
+          )}
+          <UploadSopButton isEmployee={canManageContent(user?.role)} />
       </div>
       <div className="flex items-center gap-1 text-sm text-zinc-700 dark:text-zinc-300">
         {user && (

@@ -2,6 +2,7 @@ import path from "node:path";
 import { rm } from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canManageContent } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
 import { resolveUploadPath } from "@/lib/storage";
 import { publicUrl } from "@/lib/public-url";
@@ -18,7 +19,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (session?.user?.role !== "EMPLOYEE") {
+  if (!session || !canManageContent(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -90,7 +91,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (session?.user?.role !== "EMPLOYEE") {
+  if (!session || !canManageContent(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { ReferenceMaterialRow } from "@/components/ReferenceMaterialRow";
+import { canManageContent } from "@/lib/roles";
 
 export default async function ReferenceMaterialsPage() {
   const [session, referenceMaterials] = await Promise.all([
@@ -9,7 +10,7 @@ export default async function ReferenceMaterialsPage() {
     prisma.referenceMaterial.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  const isEmployee = session?.user?.role === "EMPLOYEE";
+  const isEmployee = canManageContent(session?.user?.role);
 
   return (
     <div className="mx-auto my-8 flex w-full max-w-5xl flex-1 flex-col gap-4 px-4">

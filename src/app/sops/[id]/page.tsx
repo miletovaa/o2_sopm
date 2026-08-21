@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { SopVersionExplorer } from "@/components/SopVersionExplorer";
+import { canManageContent } from "@/lib/roles";
 
 export default async function SopDetailPage({
   params,
@@ -31,7 +32,7 @@ export default async function SopDetailPage({
     notFound();
   }
 
-  const isEmployee = session?.user?.role === "EMPLOYEE";
+  const isEmployee = canManageContent(session?.user?.role);
 
   return (
     <div className="mx-auto my-8 flex w-full max-w-5xl flex-1 flex-col gap-4 px-4">

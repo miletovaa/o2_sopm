@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canManageContent } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
 import { pdfPathFor, resolveUploadPath } from "@/lib/storage";
 import { contentDisposition } from "@/lib/contentDisposition";
@@ -36,7 +37,7 @@ export async function GET(
   // Same rule as the .docx download: current version is visible to anyone
   // with access to the SOP, older versions are Employee-only.
   const isCurrentVersion = sop.versions[0]?.id === version.id;
-  if (!isCurrentVersion && session.user.role !== "EMPLOYEE") {
+  if (!isCurrentVersion && !canManageContent(session.user.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
