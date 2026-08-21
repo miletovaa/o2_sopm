@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { saveReferenceMaterialFile } from "@/lib/storage";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const session = await auth();
   if (session?.user?.role !== "EMPLOYEE") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.redirect(new URL("/reference-materials", request.url), {
+  return NextResponse.redirect(new URL("/reference-materials", request.nextUrl), {
     status: 303,
   });
 }

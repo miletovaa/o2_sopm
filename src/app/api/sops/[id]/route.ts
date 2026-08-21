@@ -1,6 +1,6 @@
 import path from "node:path";
 import { rm } from "node:fs/promises";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveUploadPath } from "@/lib/storage";
@@ -13,7 +13,7 @@ import {
 // Updates title / analysis type (+ subtypes) / food category / instrument.
 // Does not touch versions or files.
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -77,7 +77,7 @@ export async function POST(
     },
   });
 
-  return NextResponse.redirect(new URL(`/sops/${id}`, request.url), {
+  return NextResponse.redirect(new URL(`/sops/${id}`, request.nextUrl), {
     status: 303,
   });
 }

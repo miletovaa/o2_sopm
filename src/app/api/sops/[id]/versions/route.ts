@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
@@ -10,7 +10,7 @@ const DOCX_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -86,7 +86,7 @@ export async function POST(
     throw error;
   }
 
-  return NextResponse.redirect(new URL(`/sops/${sopId}`, request.url), {
+  return NextResponse.redirect(new URL(`/sops/${sopId}`, request.nextUrl), {
     status: 303,
   });
 }
