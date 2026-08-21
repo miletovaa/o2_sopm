@@ -5,6 +5,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { extractDocxText } from "@/lib/docx";
 import { convertDocxToPdf } from "@/lib/pdf";
 import { saveSopVersionFile, saveSopVersionPdf } from "@/lib/storage";
+import { publicUrl } from "@/lib/public-url";
 
 const DOCX_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -86,7 +87,7 @@ export async function POST(
     throw error;
   }
 
-  return NextResponse.redirect(new URL(`/sops/${sopId}`, request.nextUrl), {
+  return NextResponse.redirect(publicUrl(request, `/sops/${sopId}`), {
     status: 303,
   });
 }

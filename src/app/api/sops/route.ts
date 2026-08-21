@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { extractDocxText } from "@/lib/docx";
 import { convertDocxToPdf } from "@/lib/pdf";
 import { saveSopVersionFile, saveSopVersionPdf } from "@/lib/storage";
+import { publicUrl } from "@/lib/public-url";
 import {
   findOrCreateFoodCategory,
   findOrCreateInstrument,
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     }),
   ]);
 
-  return NextResponse.redirect(new URL(`/sops/${sopId}`, request.nextUrl), {
+  return NextResponse.redirect(publicUrl(request, `/sops/${sopId}`), {
     status: 303,
   });
 }

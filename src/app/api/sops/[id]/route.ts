@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveUploadPath } from "@/lib/storage";
+import { publicUrl } from "@/lib/public-url";
 import {
   findOrCreateFoodCategory,
   findOrCreateInstrument,
@@ -77,7 +78,7 @@ export async function POST(
     },
   });
 
-  return NextResponse.redirect(new URL(`/sops/${id}`, request.nextUrl), {
+  return NextResponse.redirect(publicUrl(request, `/sops/${id}`), {
     status: 303,
   });
 }

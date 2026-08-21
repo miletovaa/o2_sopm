@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { saveSafetyMaterialFile } from "@/lib/storage";
+import { publicUrl } from "@/lib/public-url";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.redirect(new URL("/safety-materials", request.nextUrl), {
+  return NextResponse.redirect(publicUrl(request, "/safety-materials"), {
     status: 303,
   });
 }
