@@ -3,7 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function SafetyMaterialRow({ id, name }: { id: string; name: string }) {
+export function SafetyMaterialRow({
+  id,
+  name,
+  canEdit,
+  canDelete,
+}: {
+  id: string;
+  name: string;
+  canEdit: boolean;
+  canDelete: boolean;
+}) {
   const router = useRouter();
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,22 +62,26 @@ export function SafetyMaterialRow({ id, name }: { id: string; name: string }) {
           {error}
         </span>
       )}
-      <button
-        type="button"
-        onClick={handleRename}
-        disabled={isBusy}
-        className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
-      >
-        Rename
-      </button>
-      <button
-        type="button"
-        onClick={handleDelete}
-        disabled={isBusy}
-        className="rounded border border-red-600 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950"
-      >
-        Delete
-      </button>
+      {canEdit && (
+        <button
+          type="button"
+          onClick={handleRename}
+          disabled={isBusy}
+          className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 disabled:opacity-50 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+        >
+          Rename
+        </button>
+      )}
+      {canDelete && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={isBusy}
+          className="rounded border border-red-600 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950"
+        >
+          Delete
+        </button>
+      )}
     </div>
   );
 }

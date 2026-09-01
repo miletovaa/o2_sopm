@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { SopVersionExplorer } from "@/components/SopVersionExplorer";
-import { canManageContent } from "@/lib/roles";
+import { hasPermission } from "@/lib/roles";
 
 export default async function SopDetailPage({
   params,
@@ -32,7 +32,8 @@ export default async function SopDetailPage({
     notFound();
   }
 
-  const isEmployee = canManageContent(session?.user?.role);
+  const canEditDetails = hasPermission(session?.user, "content.edit");
+  const canUploadVersion = hasPermission(session?.user, "content.new_version");
 
   return (
     <div className="mx-auto my-8 flex w-full max-w-5xl flex-1 flex-col gap-4 px-4">
@@ -49,20 +50,24 @@ export default async function SopDetailPage({
         <h1 className="text-2xl font-semibold text-heading">
           {sop.title}
         </h1>
-        {isEmployee && (
+        {(canEditDetails || canUploadVersion) && (
           <div className="flex items-center gap-2">
-            <a
-              href={`/sops/${sop.id}/edit#details`}
-              className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
-            >
-              Edit&nbsp;details
-            </a>
-            <a
-              href={`/sops/${sop.id}/edit#new-version`}
-              className="rounded bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover"
-            >
-              Upload&nbsp;new&nbsp;version
-            </a>
+            {canEditDetails && (
+              <a
+                href={`/sops/${sop.id}/edit#details`}
+                className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+              >
+                Edit&nbsp;details
+              </a>
+            )}
+            {canUploadVersion && (
+              <a
+                href={`/sops/${sop.id}/edit#new-version`}
+                className="rounded bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-hover"
+              >
+                Upload&nbsp;new&nbsp;version
+              </a>
+            )}
           </div>
         )}
       </div>
@@ -70,7 +75,7 @@ export default async function SopDetailPage({
       <div className="flex flex-col gap-4 rounded-lg bg-white p-6 shadow-sm sm:p-8 dark:bg-zinc-900">
         <SopVersionExplorer
           sopId={sop.id}
-          showHistory={isEmployee}
+          showHistory={true}
           versions={sop.versions.map((version) => ({
             versionNumber: version.versionNumber,
             uploadedAt: version.uploadedAt.toISOString(),

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { ReferenceMaterialRow } from "@/components/ReferenceMaterialRow";
-import { canManageContent } from "@/lib/roles";
+import { hasPermission } from "@/lib/roles";
 
 export default async function ReferenceMaterialsPage() {
   const [session, referenceMaterials] = await Promise.all([
@@ -10,7 +10,8 @@ export default async function ReferenceMaterialsPage() {
     prisma.referenceMaterial.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  const isEmployee = canManageContent(session?.user?.role);
+  const canEdit = hasPermission(session?.user, "content.edit");
+  const canDelete = hasPermission(session?.user, "content.delete");
 
   return (
     <div className="mx-auto my-8 flex w-full max-w-5xl flex-1 flex-col gap-4 px-4">
@@ -18,7 +19,7 @@ export default async function ReferenceMaterialsPage() {
         <h1 className="text-2xl font-semibold text-heading">
           Reference files
         </h1>
-        {isEmployee && (
+        {canEdit && (
           <Link
             href="/reference-materials/new"
             className="rounded bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
@@ -50,10 +51,12 @@ export default async function ReferenceMaterialsPage() {
                   >
                     Download
                   </a>
-                  {isEmployee && (
+                  {(canEdit || canDelete) && (
                     <ReferenceMaterialRow
                       id={material.id}
                       name={material.name}
+                      canEdit={canEdit}
+                      canDelete={canDelete}
                     />
                   )}
                 </div>
