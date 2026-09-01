@@ -6,21 +6,32 @@ import { PrismaClient } from "../src/generated/prisma/client";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-async function upsertUser(username: string, password: string, role: "EMPLOYEE" | "STUDENT") {
+async function upsertUser(
+  username: string,
+  password: string,
+  role: "ADMIN" | "USER",
+  permissions: string[] = [],
+) {
   const passwordHash = await hash(password, 12);
   return prisma.user.upsert({
     where: { username },
     update: {},
-    create: { username, passwordHash, role },
+    create: { username, passwordHash, role, permissions },
   });
 }
 
 async function main() {
-  const employeePassword = process.env.SEED_EMPLOYEE_PASSWORD ?? "changeme-employee";
-  const studentPassword = process.env.SEED_STUDENT_PASSWORD ?? "changeme-student";
+  // Env var names predate the Admin/User permission-toggle model (they used to seed an
+  // Employee/Student pair) but are kept as-is so existing .env files don't need updating.
+  const adminPassword = process.env.SEED_EMPLOYEE_PASSWORD ?? "changeme-admin";
+  const staffPassword = process.env.SEED_STUDENT_PASSWORD ?? "changeme-staff";
 
-  const employee = await upsertUser("admin", employeePassword, "EMPLOYEE");
-  const student = await upsertUser("student", studentPassword, "STUDENT");
+  const admin = await upsertUser("admin", adminPassword, "ADMIN");
+  const staff = await upsertUser("student", staffPassword, "USER", [
+    "content.edit",
+    "content.new_version",
+    "content.delete",
+  ]);
 
   const analysisTypes = ["Isotope Analysis", "Fatty Acid Analysis", "Multi-Element Analysis"];
   const foodCategories = ["Meat", "Fish", "Apples", "Honey"];
@@ -40,8 +51,8 @@ async function main() {
   );
 
   console.log("Seeded users:");
-  console.log(`  employee: username="${employee.username}" password="${employeePassword}"`);
-  console.log(`  student:  username="${student.username}" password="${studentPassword}"`);
+  console.log(`  admin: username="${admin.username}" password="${adminPassword}"`);
+  console.log(`  staff: username="${staff.username}" password="${staffPassword}" (full content permissions)`);
   console.log("Change these passwords after first login.");
   console.log(`Seeded ${analysisTypes.length} analysis types and ${foodCategories.length} food categories.`);
 }

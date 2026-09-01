@@ -14,15 +14,18 @@ datasource db {
 
 enum Role {
   ADMIN
-  EMPLOYEE
-  STUDENT
+  USER
 }
 
 model User {
   id           String       @id @default(cuid())
   username     String       @unique
   passwordHash String
-  role         Role         @default(STUDENT)
+  role         Role         @default(USER)
+  // Flat list of "resource.action" strings, e.g. "content.edit", "users.delete" — see
+  // src/lib/roles.ts for the full resource/action set. Ignored entirely for ADMIN, who
+  // bypasses every check. Defaults to nothing granted for a freshly created account.
+  permissions  Json         @default("[]")
   createdAt    DateTime     @default(now())
   sopVersions  SopVersion[] @relation("UploadedVersions")
 }
