@@ -2,18 +2,16 @@ import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { assignableRoles, canManageUserWithRole } from "@/lib/roles";
+import { canAssignRole, hasPermission, isValidPermissionList } from "@/lib/roles";
 import type { Role } from "@/generated/prisma/enums";
 
-// Updates a user's username / role / (optionally) password. Only touches
-// what an Admin/Employee is actually allowed to hand out — see
-// assignableRoles in @/lib/roles.
+// Updates a user's username / role / permissions / (optionally) password.
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (!session) {
+  if (!session || !hasPermission(session.user, "users.edit")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -23,26 +21,40 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (!canManageUserWithRole(session.user.role, target.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Holding users.edit alone doesn't let you touch another Admin's account.
+  if (target.role === "ADMIN" && session.user.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Only an Admin can manage another Admin's account" },
+      { status: 403 },
+    );
   }
 
   const body = await request.json().catch(() => null);
   const username = body?.username;
   const role = body?.role;
+  const permissions = body?.permissions ?? [];
   const password = body?.password;
 
   if (typeof username !== "string" || !username.trim()) {
     return NextResponse.json({ error: "Username is required" }, { status: 400 });
   }
-  if (typeof role !== "string" || !assignableRoles(session.user.role).includes(role as Role)) {
+  if (role !== "ADMIN" && role !== "USER") {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  }
+  if (!canAssignRole(session.user, role as Role)) {
+    return NextResponse.json(
+      { error: "Only an Admin can promote another account to Admin" },
+      { status: 403 },
+    );
   }
   if (target.id === session.user.id && target.role === "ADMIN" && role !== "ADMIN") {
     return NextResponse.json(
       { error: "You cannot remove your own admin role" },
       { status: 400 },
     );
+  }
+  if (!isValidPermissionList(permissions)) {
+    return NextResponse.json({ error: "Invalid permissions" }, { status: 400 });
   }
   if (password !== undefined && password !== "" && (typeof password !== "string" || password.length < 8)) {
     return NextResponse.json(
@@ -66,6 +78,7 @@ export async function POST(
     data: {
       username: trimmedUsername,
       role: role as Role,
+      permissions,
       ...(password ? { passwordHash: await hash(password, 12) } : {}),
     },
   });
@@ -78,7 +91,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (!session) {
+  if (!session || !hasPermission(session.user, "users.delete")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -94,8 +107,11 @@ export async function DELETE(
   if (!target) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (!canManageUserWithRole(session.user.role, target.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (target.role === "ADMIN" && session.user.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Only an Admin can delete another Admin's account" },
+      { status: 403 },
+    );
   }
 
   await prisma.user.delete({ where: { id } });

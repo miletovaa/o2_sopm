@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { assignableRoles, canManageUserWithRole } from "@/lib/roles";
+import { hasPermission, isValidPermissionList } from "@/lib/roles";
 import { EditUserForm } from "@/components/EditUserForm";
 
 export default async function EditUserPage({
@@ -19,7 +19,11 @@ export default async function EditUserPage({
   if (!user) {
     notFound();
   }
-  if (!canManageUserWithRole(session?.user?.role, user.role)) {
+
+  const isAdmin = session?.user?.role === "ADMIN";
+  const canEditThisUser =
+    hasPermission(session?.user, "users.edit") && (user.role !== "ADMIN" || isAdmin);
+  if (!canEditThisUser) {
     redirect("/users");
   }
 
@@ -33,7 +37,8 @@ export default async function EditUserPage({
           id={user.id}
           initialUsername={user.username}
           initialRole={user.role}
-          roles={assignableRoles(session?.user?.role)}
+          initialPermissions={isValidPermissionList(user.permissions) ? user.permissions : []}
+          canAssignAdmin={isAdmin}
           isSelf={user.id === session?.user?.id}
         />
       </div>

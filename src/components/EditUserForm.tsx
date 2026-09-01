@@ -3,25 +3,29 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { inputClass } from "@/components/AnalysisTypeFields";
-import { ROLE_LABELS } from "@/lib/roles";
+import { PermissionToggles } from "@/components/PermissionToggles";
+import { ROLE_LABELS, type Permission } from "@/lib/roles";
 import type { Role } from "@/generated/prisma/enums";
 
 export function EditUserForm({
   id,
   initialUsername,
   initialRole,
-  roles,
+  initialPermissions,
+  canAssignAdmin,
   isSelf,
 }: {
   id: string;
   initialUsername: string;
   initialRole: Role;
-  roles: Role[];
+  initialPermissions: Permission[];
+  canAssignAdmin: boolean;
   isSelf: boolean;
 }) {
   const router = useRouter();
   const [username, setUsername] = useState(initialUsername);
   const [role, setRole] = useState<Role>(initialRole);
+  const [permissions, setPermissions] = useState<Permission[]>(initialPermissions);
   const [password, setPassword] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +41,7 @@ export function EditUserForm({
       body: JSON.stringify({
         username: username.trim(),
         role,
+        permissions: role === "ADMIN" ? [] : permissions,
         ...(password ? { password } : {}),
       }),
     });
@@ -78,25 +83,36 @@ export function EditUserForm({
         </span>
       </label>
 
-      <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-        Role
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as Role)}
-          className={inputClass}
-        >
-          {roles.map((r) => (
-            <option key={r} value={r}>
-              {ROLE_LABELS[r]}
-            </option>
-          ))}
-        </select>
-        {isSelf && initialRole === "ADMIN" && (
-          <span className="text-xs text-zinc-500">
-            You can&apos;t remove your own admin role.
-          </span>
-        )}
-      </label>
+      {canAssignAdmin && (
+        <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+          Role
+          <select
+            value={role}
+            disabled={isSelf && initialRole === "ADMIN"}
+            onChange={(e) => setRole(e.target.value as Role)}
+            className={inputClass}
+          >
+            {(["USER", "ADMIN"] as Role[]).map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+          {isSelf && initialRole === "ADMIN" && (
+            <span className="text-xs text-zinc-500">
+              You can&apos;t remove your own admin role.
+            </span>
+          )}
+        </label>
+      )}
+
+      {role === "ADMIN" ? (
+        <p className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
+          Admins always have full access — the permission toggles below don&apos;t apply.
+        </p>
+      ) : (
+        <PermissionToggles permissions={permissions} onChange={setPermissions} />
+      )}
 
       {error && (
         <p className="text-xs text-red-600 dark:text-red-400">{error}</p>

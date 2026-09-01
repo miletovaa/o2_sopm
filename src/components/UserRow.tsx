@@ -8,10 +8,14 @@ export function UserRow({
   id,
   username,
   isSelf,
+  canEdit,
+  canDelete,
 }: {
   id: string;
   username: string;
   isSelf: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
 }) {
   const router = useRouter();
   const [isBusy, setIsBusy] = useState(false);
@@ -37,13 +41,15 @@ export function UserRow({
       {error && (
         <span className="text-xs text-red-600 dark:text-red-400">{error}</span>
       )}
-      <Link
-        href={`/users/${id}/edit`}
-        className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
-      >
-        Edit
-      </Link>
-      {!isSelf && (
+      {canEdit && (
+        <Link
+          href={`/users/${id}/edit`}
+          className="rounded border border-black/10 px-3 py-1 text-xs font-medium text-black hover:bg-black/5 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/10"
+        >
+          Edit
+        </Link>
+      )}
+      {!isSelf && canDelete && (
         <button
           type="button"
           onClick={handleDelete}
