@@ -47,6 +47,11 @@ export default async function UsersPage() {
                   {user.id === session?.user?.id && (
                     <span className="ml-1 text-xs text-zinc-400">— you</span>
                   )}
+                  {user.passwordHash === null && (
+                    <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">
+                      — awaiting first sign-in
+                    </span>
+                  )}
                 </span>
                 <UserRow
                   id={user.id}

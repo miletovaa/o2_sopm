@@ -20,7 +20,9 @@ export async function POST(request: Request) {
   if (typeof username !== "string" || !username.trim()) {
     return NextResponse.json({ error: "Username is required" }, { status: 400 });
   }
-  if (typeof password !== "string" || password.length < 8) {
+  // Left blank, the account has no password yet — whoever first signs in as this user sets
+  // their own password (see the authorize() callback in src/auth.ts).
+  if (password !== undefined && (typeof password !== "string" || password.length < 8)) {
     return NextResponse.json(
       { error: "Password must be at least 8 characters" },
       { status: 400 },
@@ -46,11 +48,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Username is already taken" }, { status: 400 });
   }
 
-  const passwordHash = await hash(password, 12);
   const user = await prisma.user.create({
     data: {
       username: username.trim(),
-      passwordHash,
+      passwordHash: password ? await hash(password, 12) : null,
       role: role as Role,
       permissions,
     },

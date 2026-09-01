@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/auth.config";
 
@@ -22,8 +22,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const user = await prisma.user.findUnique({ where: { username } });
         if (!user) return null;
 
-        const isValidPassword = await compare(password, user.passwordHash);
-        if (!isValidPassword) return null;
+        // Account created without a password (see Users management) — whatever is submitted
+        // here, for this first sign-in, becomes the account's permanent password.
+        if (user.passwordHash === null) {
+          if (password.length < 8) return null;
+
+          const passwordHash = await hash(password, 12);
+          await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+        } else {
+          const isValidPassword = await compare(password, user.passwordHash);
+          if (!isValidPassword) return null;
+        }
 
         return {
           id: user.id,

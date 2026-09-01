@@ -51,10 +51,15 @@ export default async function LoginPage({
             required
             className="rounded border border-black/10 bg-transparent px-3 py-2 text-black outline-none focus:border-black/40 dark:border-white/10 dark:text-zinc-50 dark:focus:border-white/40"
           />
+          <span className="text-xs text-zinc-500">
+            First time signing in? Enter the password you&apos;d like to use — it
+            will be set as your password.
+          </span>
         </label>
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400">
-            Invalid username or password.
+            Invalid username or password (at least 8 characters if this is your
+            first time signing in).
           </p>
         )}
         <button

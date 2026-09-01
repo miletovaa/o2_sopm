@@ -38,6 +38,7 @@ export default async function EditUserPage({
           initialUsername={user.username}
           initialRole={user.role}
           initialPermissions={isValidPermissionList(user.permissions) ? user.permissions : []}
+          hasPassword={user.passwordHash !== null}
           canAssignAdmin={isAdmin}
           isSelf={user.id === session?.user?.id}
         />

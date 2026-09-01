@@ -12,6 +12,7 @@ export function EditUserForm({
   initialUsername,
   initialRole,
   initialPermissions,
+  hasPassword,
   canAssignAdmin,
   isSelf,
 }: {
@@ -19,6 +20,7 @@ export function EditUserForm({
   initialUsername: string;
   initialRole: Role;
   initialPermissions: Permission[];
+  hasPassword: boolean;
   canAssignAdmin: boolean;
   isSelf: boolean;
 }) {
@@ -70,7 +72,7 @@ export function EditUserForm({
       </label>
 
       <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-        New password (optional)
+        {hasPassword ? "New password (optional)" : "Password (optional)"}
         <input
           type="password"
           minLength={8}
@@ -79,7 +81,9 @@ export function EditUserForm({
           className={inputClass}
         />
         <span className="text-xs text-zinc-500">
-          Leave blank to keep the current password.
+          {hasPassword
+            ? "Leave blank to keep the current password."
+            : "No password set yet — leave blank to let the user set their own the first time they sign in."}
         </span>
       </label>
 

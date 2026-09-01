@@ -20,7 +20,10 @@ enum Role {
 model User {
   id           String       @id @default(cuid())
   username     String       @unique
-  passwordHash String
+  // Null means no password has been set yet — whoever created the account left it blank, and
+  // whatever the user first types on the login screen becomes their permanent password (see
+  // the authorize() callback in src/auth.ts).
+  passwordHash String?
   role         Role         @default(USER)
   // Flat list of "resource.action" strings, e.g. "content.edit", "users.delete" — see
   // src/lib/roles.ts for the full resource/action set. Ignored entirely for ADMIN, who

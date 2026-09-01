@@ -26,7 +26,7 @@ export function NewUserForm({ canAssignAdmin }: { canAssignAdmin: boolean }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: username.trim(),
-        password,
+        password: password || undefined,
         role,
         permissions: role === "ADMIN" ? [] : permissions,
       }),
@@ -56,16 +56,18 @@ export function NewUserForm({ canAssignAdmin }: { canAssignAdmin: boolean }) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
-        Password
+        Password (optional)
         <input
           type="password"
-          required
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className={inputClass}
         />
-        <span className="text-xs text-zinc-500">At least 8 characters.</span>
+        <span className="text-xs text-zinc-500">
+          Leave blank to let the user set their own password the first time they sign in.
+          Otherwise, at least 8 characters.
+        </span>
       </label>
 
       {canAssignAdmin && (
