@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { canManageContent } from "@/lib/roles";
+import { hasPermission } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
 import { saveSafetyMaterialFile } from "@/lib/storage";
 import { publicUrl } from "@/lib/public-url";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (!session || !canManageContent(session.user.role)) {
+  if (!session || !hasPermission(session.user, "content.edit")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
