@@ -15,12 +15,14 @@ export const authConfig = {
       if (user) {
         token.id = user.id as string;
         token.role = user.role;
+        token.permissions = user.permissions;
       }
       return token;
     },
     session({ session, token }) {
       session.user.id = token.id;
       session.user.role = token.role;
+      session.user.permissions = token.permissions;
       return session;
     },
   },

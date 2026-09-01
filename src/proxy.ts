@@ -1,30 +1,28 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/auth.config";
-import { canManageContent } from "@/lib/roles";
+import { hasPermission, type Permission } from "@/lib/roles";
 
 const { auth } = NextAuth(authConfig);
 
-// Routes only Admins/Employees may reach: version history, edit/upload, and
-// uploading reference & safety materials. Students can still read the
-// reference/safety material lists and download files — just not add to
-// them.
-const STAFF_ONLY_PATTERNS = [
-  /^\/sops\/new(\/|$)/,
-  /^\/sops\/[^/]+\/edit(\/|$)/,
-  /^\/sops\/[^/]+\/history(\/|$)/,
-  /^\/reference-materials\/new(\/|$)/,
-  /^\/safety-materials\/new(\/|$)/,
+// Viewing SOPs/materials (including version history and older-version downloads) is open to
+// any logged-in user — only these write-ish pages are gated, and each needs at least one of
+// the listed permissions to be reached at all. The pages themselves do finer-grained
+// per-section gating (e.g. /sops/[id]/edit shows the metadata form only with content.edit and
+// the new-version uploader only with content.new_version).
+const CONTENT_GATED_PATTERNS: { pattern: RegExp; permissions: Permission[] }[] = [
+  { pattern: /^\/sops\/new(\/|$)/, permissions: ["content.edit"] },
+  { pattern: /^\/sops\/[^/]+\/edit(\/|$)/, permissions: ["content.edit", "content.new_version"] },
+  { pattern: /^\/reference-materials\/new(\/|$)/, permissions: ["content.edit"] },
+  { pattern: /^\/safety-materials\/new(\/|$)/, permissions: ["content.edit"] },
 ];
 
-// The Users page itself: Admins can create Admins/Employees/Students,
-// Employees can only create Students. Students can't reach it at all.
 const USERS_PATTERNS = [/^\/users(\/|$)/];
 
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth?.user;
-  const role = req.auth?.user?.role;
+  const user = req.auth?.user;
 
   if (!isLoggedIn) {
     const loginUrl = new URL("/login", nextUrl);
@@ -32,17 +30,20 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  const requiresStaff = STAFF_ONLY_PATTERNS.some((pattern) =>
+  const contentRule = CONTENT_GATED_PATTERNS.find(({ pattern }) =>
     pattern.test(nextUrl.pathname),
   );
-  if (requiresStaff && !canManageContent(role)) {
+  if (
+    contentRule &&
+    !contentRule.permissions.some((p) => hasPermission(user, p))
+  ) {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 
   const requiresUsersAccess = USERS_PATTERNS.some((pattern) =>
     pattern.test(nextUrl.pathname),
   );
-  if (requiresUsersAccess && !canManageContent(role)) {
+  if (requiresUsersAccess && !hasPermission(user, "users.view")) {
     return NextResponse.redirect(new URL("/", nextUrl));
   }
 

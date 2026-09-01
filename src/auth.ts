@@ -25,7 +25,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const isValidPassword = await compare(password, user.passwordHash);
         if (!isValidPassword) return null;
 
-        return { id: user.id, name: user.username, role: user.role };
+        return {
+          id: user.id,
+          name: user.username,
+          role: user.role,
+          permissions: Array.isArray(user.permissions)
+            ? (user.permissions as string[])
+            : [],
+        };
       },
     }),
   ],
